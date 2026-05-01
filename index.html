@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>NEXUS — голосовой ассистент с улыбкой</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ NEXUS</h1>
+        <p class="subtitle">анализ голоса + улыбка 😏</p>
+        
+        <div class="nexus-face" id="nexusFace">
+            <div class="eyes">
+                <div class="eye left"></div>
+                <div class="eye right"></div>
+            </div>
+            <div class="mouth" id="mouth">😐</div>
+        </div>
+        
+        <div class="controls">
+            <button id="listenBtn" class="listen-btn">🎤 СКАЗАТЬ</button>
+            <button id="smileBtn" class="smile-btn">😏 УЛЫБНУТЬСЯ</button>
+        </div>
+        
+        <div class="analysis" id="analysis">
+            <h3>📊 анализ голоса</h3>
+            <div id="analysisResult">—</div>
+        </div>
+        
+        <div class="response" id="response">
+            <h3>🤖 NEXUS говорит</h3>
+            <div id="responseText">—</div>
+        </div>
+        
+        <div class="status" id="status">🔴 ожидание</div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
