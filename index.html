@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NEXUS — живая улыбка с памятью</title>
+    <title>NEXUS — память + живая улыбка</title>
     <style>
         * {
             margin: 0;
@@ -32,7 +32,6 @@
             max-width: 550px;
         }
 
-        /* Лицо с Canvas улыбкой */
         .face {
             position: relative;
             width: 300px;
@@ -87,7 +86,6 @@
             filter: drop-shadow(0 0 8px #3b82f6);
         }
 
-        /* Кнопки */
         .button-group {
             display: flex;
             gap: 15px;
@@ -146,7 +144,6 @@
             word-break: break-word;
         }
 
-        /* Модальное окно памяти */
         .modal {
             display: none;
             position: fixed;
@@ -242,7 +239,7 @@
     </div>
 
     <div class="speech-bubble" id="speechBubble">
-        💙 Привет, я NEXUS с живой улыбкой
+        💙 Я NEXUS. Наполни меня знаниями через память
     </div>
 
     <div class="button-group">
@@ -251,7 +248,6 @@
     </div>
 </div>
 
-<!-- Модальное окно памяти -->
 <div id="memoryModal" class="modal">
     <div class="modal-content">
         <h3>📖 Память NEXUS</h3>
@@ -262,9 +258,6 @@
 </div>
 
 <script>
-    // =======================
-    // NEXUS — ЖИВАЯ УЛЫБКА (CANVAS) + ПАМЯТЬ
-    // =======================
     class Nexus {
         constructor() {
             this.canvas = document.getElementById('smileCanvas');
@@ -273,29 +266,24 @@
             this.rightPupil = document.getElementById('rightPupil');
             this.speechBubble = document.getElementById('speechBubble');
             
-            // Параметры улыбки (меняются в реальном времени)
+            // Улыбка рисуется ВВЕРХ (радостная)
             this.smileParams = {
-                width: 140,    // ширина улыбки
-                curve: 35,     // изгиб (положительный = радость)
+                width: 140,
+                curve: 38,     // положительный = улыбка вверх
                 thickness: 5,
                 color: '#3b82f6'
             };
             
-            // Память (загружаем из localStorage)
             this.memory = this.loadMemory();
-            
-            // Мимика
-            this.currentMood = 'neutral';
             this.initCanvas();
             this.initSpeech();
             this.startAutonomousLife();
             this.bindEvents();
             
-            this.updateSpeech("💙 Говори со мной, я запоминаю слова");
+            this.updateSpeech("💙 Скажи: «запомни, что я люблю кофе» — и я буду знать");
             this.drawSmile();
         }
         
-        // ========= CANVAS УЛЫБКА (НЕ СТИКЕР) =========
         initCanvas() {
             this.canvas.width = 200;
             this.canvas.height = 80;
@@ -312,7 +300,7 @@
             const startX = xCenter - w/2;
             const endX = xCenter + w/2;
             const controlX = xCenter;
-            const controlY = yBase - curve;
+            const controlY = yBase - curve;  // минус = вверх (улыбка)
             
             this.ctx.beginPath();
             this.ctx.moveTo(startX, yBase);
@@ -322,8 +310,7 @@
             this.ctx.lineCap = 'round';
             this.ctx.stroke();
             
-            // Добавим блики для живости
-            if (curve > 20) {
+            if (curve > 25) {
                 this.ctx.beginPath();
                 this.ctx.arc(xCenter - 25, yBase - curve + 8, 3, 0, Math.PI * 2);
                 this.ctx.fillStyle = '#60a5fa';
@@ -331,81 +318,53 @@
             }
         }
         
-        // Анимированное изменение улыбки
         animateSmile(targetParams, duration = 400) {
             const startParams = { ...this.smileParams };
             const startTime = performance.now();
-            
             const animate = (now) => {
                 const elapsed = now - startTime;
                 const t = Math.min(1, elapsed / duration);
-                
                 this.smileParams.width = startParams.width + (targetParams.width - startParams.width) * t;
                 this.smileParams.curve = startParams.curve + (targetParams.curve - startParams.curve) * t;
                 this.smileParams.thickness = startParams.thickness + (targetParams.thickness - startParams.thickness) * t;
-                
                 this.drawSmile();
-                
                 if (t < 1) requestAnimationFrame(animate);
             };
-            
             requestAnimationFrame(animate);
         }
         
-        // Смена настроения через улыбку
         setMood(mood) {
-            this.currentMood = mood;
             switch(mood) {
                 case 'happy':
-                    this.animateSmile({ width: 160, curve: 48, thickness: 6, color: '#60a5fa' }, 300);
-                    break;
-                case 'sad':
-                    this.animateSmile({ width: 130, curve: -20, thickness: 4, color: '#94a3b8' }, 300);
+                    this.animateSmile({ width: 165, curve: 52, thickness: 6, color: '#60a5fa' }, 300);
                     break;
                 case 'thinking':
-                    this.animateSmile({ width: 120, curve: 10, thickness: 4, color: '#fbbf24' }, 400);
-                    break;
-                case 'surprised':
-                    this.animateSmile({ width: 170, curve: 55, thickness: 7, color: '#f97316' }, 250);
+                    this.animateSmile({ width: 130, curve: 20, thickness: 4, color: '#fbbf24' }, 400);
                     break;
                 default:
-                    this.animateSmile({ width: 140, curve: 32, thickness: 5, color: '#3b82f6' }, 300);
-            }
-            
-            // Анимация зрачков
-            if (mood === 'surprised') {
-                this.leftPupil.style.transform = 'scale(0.7)';
-                this.rightPupil.style.transform = 'scale(0.7)';
-                setTimeout(() => {
-                    this.leftPupil.style.transform = 'scale(1)';
-                    this.rightPupil.style.transform = 'scale(1)';
-                }, 500);
+                    this.animateSmile({ width: 145, curve: 38, thickness: 5, color: '#3b82f6' }, 300);
             }
         }
         
-        // ========= АВТОНОМНАЯ ЖИЗНЬ =========
         startAutonomousLife() {
             setInterval(() => this.blink(), 4000);
             setInterval(() => {
-                const moods = ['happy', 'thinking', 'happy'];
-                const randomMood = moods[Math.floor(Math.random() * moods.length)];
-                this.setMood(randomMood);
+                this.setMood('happy');
                 setTimeout(() => this.setMood('neutral'), 1500);
-            }, 9000);
+            }, 8000);
         }
         
         blink() {
-            this.leftPupil.style.transform = 'scaleY(0.1)';
-            this.rightPupil.style.transform = 'scaleY(0.1)';
+            this.leftPupil.style.transform = 'scaleY(0.05)';
+            this.rightPupil.style.transform = 'scaleY(0.05)';
             setTimeout(() => {
                 this.leftPupil.style.transform = 'scaleY(1)';
                 this.rightPupil.style.transform = 'scaleY(1)';
             }, 100);
         }
         
-        // ========= РАСПОЗНАВАНИЕ ГОЛОСА =========
         initSpeech() {
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            if (!('webkitSpeechRecognition' in window)) {
                 this.updateSpeech("❌ Голос не поддерживается, но память работает");
                 return;
             }
@@ -413,27 +372,22 @@
             this.recognition = new SpeechRecognition();
             this.recognition.lang = 'ru-RU';
             this.recognition.continuous = false;
-            this.recognition.interimResults = false;
             
             this.recognition.onstart = () => {
                 document.getElementById('listenBtn').classList.add('listening');
                 this.setMood('thinking');
-                this.updateSpeech("🎧 слушаю... скажи что-нибудь");
+                this.updateSpeech("🎧 слушаю...");
             };
-            
             this.recognition.onend = () => {
                 document.getElementById('listenBtn').classList.remove('listening');
             };
-            
             this.recognition.onresult = (event) => {
                 const text = event.results[0][0].transcript;
                 this.processCommand(text);
             };
-            
             this.recognition.onerror = () => {
                 this.updateSpeech("👂 не расслышала, попробуй ещё");
-                this.setMood('sad');
-                setTimeout(() => this.setMood('neutral'), 1000);
+                this.setMood('neutral');
             };
         }
         
@@ -445,81 +399,70 @@
             }
         }
         
-        // ========= ОБРАБОТКА КОМАНД + ПАМЯТЬ =========
+        // ========= ГЛАВНЫЙ МОЗГ: ЖИВЁТ ТОЛЬКО ИЗ ПАМЯТИ =========
         processCommand(text) {
             const lower = text.toLowerCase();
-            let response = "";
             
-            // ЗАПОМНИ: слово — значение
-            const rememberMatch = text.match(/запомни[: ]?\s*(\S+)\s*[-–—]\s*(.+)/i) ||
-                                 text.match(/запомни[: ]?\s*(\S+)\s*это\s*(.+)/i);
+            // ЗАПОМНИТЬ: "запомни что-то"
+            const rememberMatch = text.match(/запомни[: ]?\s*(.+)/i);
             if (rememberMatch) {
-                const key = rememberMatch[1].toLowerCase();
-                const value = rememberMatch[2];
-                this.memory[key] = value;
+                const fact = rememberMatch[1].trim();
+                const id = Date.now().toString();
+                this.memory[id] = fact;
                 this.saveMemory();
-                response = `✅ Запомнила: ${key} — это ${value}`;
+                this.updateSpeech(`✅ Запомнила: ${fact.substring(0, 80)}`);
                 this.setMood('happy');
-                this.updateSpeech(response);
+                setTimeout(() => this.setMood('neutral'), 1000);
                 return;
             }
             
-            // ЧТО ЗНАЧИТ слово?
-            const whatMatch = text.match(/что значит\s+(\S+)/i) ||
-                             text.match(/кто такой\s+(\S+)/i) ||
-                             text.match(/что такое\s+(\S+)/i);
-            if (whatMatch) {
-                const key = whatMatch[1].toLowerCase();
-                if (this.memory[key]) {
-                    response = `📖 ${key} — это ${this.memory[key]}`;
-                    this.setMood('happy');
-                } else {
-                    response = `🤔 Я не знаю, что значит «${key}». Скажи «запомни ${key} — ...»`;
-                    this.setMood('thinking');
-                }
-                this.updateSpeech(response);
-                return;
-            }
-            
-            // Обычные фразы
-            if (lower.includes("привет")) {
-                response = "Привет! Я с голубой улыбкой. Скажи «запомни ... — ...» чтобы научить меня";
-                this.setMood('happy');
-            } 
-            else if (lower.includes("как дела")) {
-                response = "Улыбаюсь и учусь новым словам! А у тебя?";
-                this.setMood('happy');
-            }
-            else if (lower.includes("улыбнись")) {
-                response = "😊 Смотри, моя улыбка стала шире!";
-                this.setMood('happy');
-                setTimeout(() => this.setMood('neutral'), 1500);
-            }
-            else if (lower.includes("пока")) {
-                response = "Пока! Не забывай меня учить новым словам 💙";
-                this.setMood('happy');
-            }
-            else {
-                response = `💬 Ты сказал: «${text}». Чтобы я запомнила слово, скажи: "запомни котик — это пушистое животное"`;
+            // Если память пуста — просим наполнить
+            if (Object.keys(this.memory).length === 0) {
+                this.updateSpeech("📭 Моя память пуста. Скажи: «запомни, что я люблю собак» или открой «Память» и добавь факты");
                 this.setMood('thinking');
-                setTimeout(() => this.setMood('neutral'), 1200);
+                return;
             }
             
-            this.updateSpeech(response);
+            // АНАЛИЗ: ищем в памяти всё, что связано с вопросом
+            const allFacts = Object.values(this.memory);
+            const relevantFacts = allFacts.filter(fact => 
+                fact.toLowerCase().includes(lower) || 
+                this.isRelated(lower, fact)
+            );
+            
+            if (relevantFacts.length > 0) {
+                let answer = "🔍 По моей памяти: ";
+                answer += relevantFacts.slice(0, 3).join(". ");
+                if (relevantFacts.length > 3) answer += " (и ещё кое-что)";
+                this.updateSpeech(answer);
+                this.setMood('happy');
+            } else {
+                this.updateSpeech(`🤔 В моей памяти нет ничего про «${text}». Скажи «запомни...» чтобы я узнал.`);
+                this.setMood('thinking');
+            }
+            setTimeout(() => this.setMood('neutral'), 2000);
+        }
+        
+        // Простой анализатор связей (можно расширять)
+        isRelated(question, fact) {
+            const keywords = question.split(/\s+/);
+            for (let kw of keywords) {
+                if (kw.length > 3 && fact.toLowerCase().includes(kw)) return true;
+            }
+            return false;
         }
         
         updateSpeech(text) {
             this.speechBubble.textContent = text;
         }
         
-        // ========= РАБОТА С ПАМЯТЬЮ =========
         loadMemory() {
-            const saved = localStorage.getItem('nexus_memory');
+            const saved = localStorage.getItem('nexus_memory_v2');
             return saved ? JSON.parse(saved) : {};
         }
         
         saveMemory() {
-            localStorage.setItem('nexus_memory', JSON.stringify(this.memory));
+            localStorage.setItem('nexus_memory_v2', JSON.stringify(this.memory));
         }
         
         showMemoryModal() {
@@ -528,18 +471,17 @@
             container.innerHTML = '';
             
             if (Object.keys(this.memory).length === 0) {
-                container.innerHTML = '<p>📭 Память пуста. Скажи: "запомни солнце — это звезда"</p>';
+                container.innerHTML = '<p>📭 Память пуста. Скажи: "запомни, что я люблю солнце"</p>';
             } else {
-                for (const [key, value] of Object.entries(this.memory)) {
+                for (const [id, fact] of Object.entries(this.memory)) {
                     const div = document.createElement('div');
                     div.className = 'memory-item';
                     div.innerHTML = `
-                        <div class="memory-key">📌 ${key}</div>
-                        <div class="memory-value">${value}</div>
+                        <div class="memory-value">📌 ${fact}</div>
                         <div class="memory-edit">
-                            <input type="text" placeholder="новое значение" id="edit-${key}">
-                            <button class="small-btn save-edit" data-key="${key}">💾</button>
-                            <button class="small-btn delete-memory" data-key="${key}">🗑️</button>
+                            <input type="text" placeholder="новый текст" id="edit-${id}">
+                            <button class="small-btn save-edit" data-id="${id}">✏️</button>
+                            <button class="small-btn delete-memory" data-id="${id}">🗑️</button>
                         </div>
                     `;
                     container.appendChild(div);
@@ -548,35 +490,34 @@
             
             modal.style.display = 'flex';
             
-            // Обработчики внутри модалки
             document.querySelectorAll('.save-edit').forEach(btn => {
                 btn.onclick = () => {
-                    const key = btn.dataset.key;
-                    const newValue = document.getElementById(`edit-${key}`).value;
-                    if (newValue) {
-                        this.memory[key] = newValue;
+                    const id = btn.dataset.id;
+                    const newVal = document.getElementById(`edit-${id}`).value;
+                    if (newVal) {
+                        this.memory[id] = newVal;
                         this.saveMemory();
-                        this.showMemoryModal(); // обновить
-                        this.updateSpeech(`📝 Обновила: ${key} — ${newValue}`);
+                        this.showMemoryModal();
+                        this.updateSpeech(`📝 Обновила факт`);
                     }
                 };
             });
             
             document.querySelectorAll('.delete-memory').forEach(btn => {
                 btn.onclick = () => {
-                    const key = btn.dataset.key;
-                    delete this.memory[key];
+                    const id = btn.dataset.id;
+                    delete this.memory[id];
                     this.saveMemory();
                     this.showMemoryModal();
-                    this.updateSpeech(`🗑️ Удалила «${key}» из памяти`);
+                    this.updateSpeech(`🗑️ Удалила из памяти`);
                 };
             });
         }
         
         copyAllMemory() {
             let text = "ПАМЯТЬ NEXUS:\n";
-            for (const [key, value] of Object.entries(this.memory)) {
-                text += `${key} → ${value}\n`;
+            for (const fact of Object.values(this.memory)) {
+                text += `• ${fact}\n`;
             }
             navigator.clipboard.writeText(text);
             this.updateSpeech("📋 Вся память скопирована!");
