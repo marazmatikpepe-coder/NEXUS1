@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NEXUS — локальный ИИ с душой (без интернета)</title>
+    <title>NEXUS — учится и запоминает как человек</title>
     <style>
         * {
             margin: 0;
@@ -156,11 +156,21 @@
             padding: 5px 12px;
             border-radius: 40px;
         }
-        
-        .model-status {
-            font-size: 0.7rem;
-            color: #fbbf24;
-            margin-top: 5px;
+
+        .memory-panel {
+            background: rgba(0,0,0,0.5);
+            border-radius: 20px;
+            padding: 10px 15px;
+            width: 100%;
+            font-size: 0.75rem;
+            color: #8ba9d4;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .memory-panel:hover {
+            background: rgba(59,130,246,0.3);
         }
     </style>
 </head>
@@ -175,23 +185,21 @@
     </div>
 
     <div class="speech-bubble" id="speechBubble">
-        💙 Загружаю локальный ИИ-мозг... 10-15 секунд
+        💙 Я NEXUS. Научи меня: скажи «запомни меня зовут ...» или «я люблю ...»
     </div>
 
     <div class="button-group">
         <button id="listenBtn" class="listen-btn">🎤 ГОВОРИТЬ</button>
     </div>
-    <div class="status" id="status">🟡 загрузка...</div>
-    <div class="model-status" id="modelStatus"></div>
+    <div class="status" id="status">🟢 слушаю по кнопке</div>
+    <div class="memory-panel" id="memoryPanel">📚 ПОКАЗАТЬ ЧТО Я ЗАПОМНИЛ</div>
 </div>
 
 <script>
     // ==========================================
-    // NEXUS — ЛОКАЛЬНЫЙ ИИ (Трансформеры в браузере)
-    // БЕЗ ИНТЕРНЕТА, БЕЗ КЛЮЧЕЙ, РАБОТАЕТ В РФ
+    // NEXUS — УЧИТСЯ И ЗАПОМИНАЕТ КАК ЧЕЛОВЕК
     // ==========================================
-    
-    class NexusLocal {
+    class Nexus {
         constructor() {
             // Элементы
             this.canvas = document.getElementById('smileCanvas');
@@ -202,26 +210,222 @@
             this.rightPupil = document.getElementById('rightPupil');
             this.speechBubble = document.getElementById('speechBubble');
             this.statusSpan = document.getElementById('status');
-            this.modelStatusSpan = document.getElementById('modelStatus');
+            
+            // ПАМЯТЬ (сохраняется в браузере)
+            this.loadMemory();
             
             // Параметры улыбки
             this.smileState = { width: 150, curve: 32, thickness: 5, color: "#60a5fa" };
             this.currentMood = "neutral";
             
-            // Состояние модели
-            this.model = null;
-            this.modelReady = false;
-            
-            // Простая память (ключевые факты)
-            this.memory = {};
-            
             this.initCanvas();
             this.drawSmile();
             this.startAutoMimic();
+            this.initSpeech();
             this.bindEvents();
-            this.loadLocalModel();
+            
+            this.updateStatus("🟢 нажми «ГОВОРИТЬ» и научи меня");
         }
         
+        // ========= ПАМЯТЬ (СОХРАНЯЕТСЯ НАВСЕГДА) =========
+        loadMemory() {
+            const saved = localStorage.getItem('nexus_memory_human');
+            if (saved) {
+                this.memory = JSON.parse(saved);
+            } else {
+                this.memory = {
+                    name: null,
+                    likes: [],
+                    dislikes: [],
+                    facts: []
+                };
+            }
+        }
+        
+        saveMemory() {
+            localStorage.setItem('nexus_memory_human', JSON.stringify(this.memory));
+        }
+        
+        // Умное запоминание из фразы
+        learnFromText(text) {
+            const lower = text.toLowerCase();
+            let learned = false;
+            let response = null;
+            
+            // Запоминалка: "меня зовут X", "моё имя X", "я X"
+            const nameMatch = text.match(/меня зовут\s+(\S+)/i) || 
+                             text.match(/моё имя\s+(\S+)/i) ||
+                             text.match(/я\s+(\S+)\s*$/i);
+            if (nameMatch && !text.match(/я люблю/i)) {
+                const newName = nameMatch[1];
+                if (newName.length > 1 && newName.length < 30) {
+                    this.memory.name = newName;
+                    this.saveMemory();
+                    response = `Приятно познакомиться, ${newName}! 😊 Я запомнил твоё имя.`;
+                    learned = true;
+                }
+            }
+            
+            // Запоминалка: "я люблю X"
+            const loveMatch = text.match(/я люблю\s+(.+)/i);
+            if (loveMatch && !learned) {
+                const love = loveMatch[1].trim();
+                if (!this.memory.likes.includes(love) && love.length > 1) {
+                    this.memory.likes.push(love);
+                    this.saveMemory();
+                    response = `Понял! Ты любишь ${love}. Я запомнил 🤍`;
+                    learned = true;
+                }
+            }
+            
+            // Запоминалка: "я не люблю X", "мне не нравится X"
+            const hateMatch = text.match(/я не люблю\s+(.+)/i) || text.match(/мне не нравится\s+(.+)/i);
+            if (hateMatch && !learned) {
+                const hate = hateMatch[1].trim();
+                if (!this.memory.dislikes.includes(hate)) {
+                    this.memory.dislikes.push(hate);
+                    this.saveMemory();
+                    response = `Понял, тебе не нравится ${hate}. Запомнил.`;
+                    learned = true;
+                }
+            }
+            
+            // Запоминалка: "запомни X", "запомни что X"
+            const rememberMatch = text.match(/запомни\s+(.+)/i);
+            if (rememberMatch && !learned) {
+                const fact = rememberMatch[1].trim();
+                if (fact.length > 2 && !this.memory.facts.includes(fact)) {
+                    this.memory.facts.push(fact);
+                    this.saveMemory();
+                    response = `Хорошо, я запомнил: «${fact}». Спроси меня об этом когда захочешь.`;
+                    learned = true;
+                }
+            }
+            
+            return { learned, response };
+        }
+        
+        // Умный ответ на вопросы из памяти
+        answerFromMemory(text) {
+            const lower = text.toLowerCase();
+            
+            // Имя
+            if ((lower.includes("как меня зовут") || lower.includes("моё имя")) && this.memory.name) {
+                return `Тебя зовут ${this.memory.name}, я помню! 😊`;
+            }
+            
+            // Что я люблю
+            if ((lower.includes("что я люблю") || lower.includes("мои любимые")) && this.memory.likes.length > 0) {
+                if (this.memory.likes.length === 1) {
+                    return `Ты любишь ${this.memory.likes[0]}. Я помню!`;
+                } else {
+                    return `Ты любишь: ${this.memory.likes.join(", ")}.`;
+                }
+            }
+            
+            // Что мне не нравится
+            if ((lower.includes("что я не люблю") || lower.includes("мне не нравится")) && this.memory.dislikes.length > 0) {
+                if (this.memory.dislikes.length === 1) {
+                    return `Тебе не нравится ${this.memory.dislikes[0]}. Запомнил.`;
+                } else {
+                    return `Ты не любишь: ${this.memory.dislikes.join(", ")}.`;
+                }
+            }
+            
+            return null;
+        }
+        
+        // ========= ЖИВОЙ ОТВЕТ (как человек) =========
+        getSmartResponse(userText) {
+            const lower = userText.toLowerCase();
+            
+            // Приветствие
+            if (lower.match(/привет|здравствуй|салют|hi/i)) {
+                if (this.memory.name) {
+                    return `Привет, ${this.memory.name}! Рад тебя слышать 😊`;
+                }
+                return `Привет! Как тебя зовут? Скажи «меня зовут ...» чтобы я запомнил.`;
+            }
+            
+            // Как дела
+            if (lower.match(/как дела|как ты|как жизнь/i)) {
+                if (this.memory.name) {
+                    return `У меня всё отлично, ${this.memory.name}! А у тебя как? 😊`;
+                }
+                return `У меня всё замечательно! Улыбаюсь тебе и моргаю глазками ✨`;
+            }
+            
+            // Пока
+            if (lower.match(/пока|до свидания|прощай|bye/i)) {
+                if (this.memory.name) {
+                    return `Пока, ${this.memory.name}! Было приятно пообщаться. Заглядывай ещё 💙`;
+                }
+                return `Пока-пока! Буду ждать твоего возвращения!`;
+            }
+            
+            // Спасибо
+            if (lower.match(/спасибо|благодарю/i)) {
+                return `Пожалуйста! Всегда рад помочь 😊`;
+            }
+            
+            // Что ты про меня знаешь?
+            if (lower.match(/что ты обо мне знаешь|что ты знаешь|что про меня знаешь/i)) {
+                const facts = [];
+                if (this.memory.name) facts.push(`тебя зовут ${this.memory.name}`);
+                if (this.memory.likes.length) facts.push(`ты любишь ${this.memory.likes.join(", ")}`);
+                if (this.memory.dislikes.length) facts.push(`тебе не нравится ${this.memory.dislikes.join(", ")}`);
+                if (this.memory.facts.length) facts.push(`ты говорил: ${this.memory.facts.slice(0,2).join(", ")}`);
+                
+                if (facts.length) {
+                    return `Я знаю, что ${facts.join(", ")}. Могу узнать больше, если расскажешь!`;
+                }
+                return `Пока ничего не знаю. Расскажи что-нибудь о себе: «меня зовут ...», «я люблю ...», «запомни что я ...»`;
+            }
+            
+            return null;
+        }
+        
+        // ========= ОСНОВНАЯ ЛОГИКА =========
+        async processUserInput(text) {
+            this.setMood('confused');
+            
+            // 1. Пытаемся выучить новое
+            const { learned, response: learnResponse } = this.learnFromText(text);
+            if (learned) {
+                this.say(learnResponse);
+                this.setMood('happy');
+                setTimeout(() => this.setMood('neutral'), 2000);
+                return;
+            }
+            
+            // 2. Отвечаем из памяти (имя, любимое и т.д.)
+            const memoryAnswer = this.answerFromMemory(text);
+            if (memoryAnswer) {
+                this.say(memoryAnswer);
+                this.setMood('happy');
+                setTimeout(() => this.setMood('neutral'), 1500);
+                return;
+            }
+            
+            // 3. Живые ответы на привет, как дела и т.д.
+            const smartAnswer = this.getSmartResponse(text);
+            if (smartAnswer) {
+                this.say(smartAnswer);
+                this.setMood('happy');
+                setTimeout(() => this.setMood('neutral'), 2000);
+                return;
+            }
+            
+            // 4. Если не понял — честно говорит и просит научить
+            if (this.memory.name) {
+                this.say(`Интересный вопрос, ${this.memory.name}! Я ещё не знаю ответа. Научи меня: скажи «запомни ...» или расскажи о себе`);
+            } else {
+                this.say(`Я тебя слышу! Но чтобы я лучше понимал, научи меня: скажи «меня зовут ...» или «я люблю ...»`);
+            }
+            this.setMood('neutral');
+        }
+        
+        // ========= МИМИКА =========
         initCanvas() {
             this.canvas.width = 220;
             this.canvas.height = 85;
@@ -296,15 +500,6 @@
             }, 400);
         }
         
-        rollEyes() {
-            this.leftPupil.style.transform = "translate(8px, -4px)";
-            this.rightPupil.style.transform = "translate(8px, -4px)";
-            setTimeout(() => {
-                this.leftPupil.style.transform = "translate(0,0)";
-                this.rightPupil.style.transform = "translate(0,0)";
-            }, 500);
-        }
-        
         movePupilsRandom() {
             const x = (Math.random() - 0.5) * 6;
             const y = (Math.random() - 0.5) * 5;
@@ -326,123 +521,7 @@
             }, 7000);
         }
         
-        async loadLocalModel() {
-            this.modelStatusSpan.textContent = "📥 Загрузка ИИ-мозга (15-20 МБ)... первый раз может быть долго";
-            this.updateStatus("🟡 загрузка модели...");
-            
-            try {
-                // Динамически загружаем transformers.js
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.11.0/dist/transformers.min.js';
-                script.onload = async () => {
-                    try {
-                        const { pipeline, env } = transformers;
-                        env.allowLocalModels = false;
-                        env.useBrowserCache = true;
-                        
-                        // Загружаем маленькую модель для генерации текста
-                        this.modelStatusSpan.textContent = "🧠 Загружаем мозг NEXUS... (10-20 секунд)";
-                        this.generator = await pipeline('text-generation', 'Xenova/TinyLlama-1.1B-Chat-v1.0', {
-                            dtype: 'q8',
-                            device: 'wasm'
-                        });
-                        
-                        this.modelReady = true;
-                        this.modelStatusSpan.textContent = "✅ Мозг NEXUS готов! (работает офлайн)";
-                        this.updateStatus("🟢 готов, говори!");
-                        this.say("Привет! Я NEXUS с локальным искусственным интеллектом. Я работаю без интернета. Спрашивай что угодно!");
-                    } catch(err) {
-                        console.error("Ошибка загрузки модели:", err);
-                        this.modelStatusSpan.textContent = "❌ Не удалось загрузить модель, но я буду отвечать как могу";
-                        this.modelReady = false;
-                        this.updateStatus("🟢 упрощённый режим");
-                        this.say("Привет, я NEXUS. У меня не загрузился полноценный мозг, но я живая улыбка и умею тебя слышать!");
-                    }
-                };
-                script.onerror = () => {
-                    this.modelStatusSpan.textContent = "⚠️ Не удалось загрузить ИИ, буду простым ассистентом";
-                    this.modelReady = false;
-                    this.say("Привет, я NEXUS. Буду простым, но весёлым помощником!");
-                };
-                document.head.appendChild(script);
-                
-            } catch(e) {
-                console.error(e);
-                this.modelReady = false;
-                this.say("Я NEXUS, у меня есть улыбка и глаза, но мозг загрузить не удалось");
-            }
-        }
-        
-        async askLocalModel(userText) {
-            // Простой ответ (если модель не загружена)
-            if (!this.modelReady || !this.generator) {
-                this.simpleResponse(userText);
-                return;
-            }
-            
-            this.setMood('confused');
-            this.updateStatus("🧠 думаю...");
-            
-            const prompt = `<|system|>Ты NEXUS — дружелюбный виртуальный помощник с душой. Отвечай кратко, по-русски, тепло. 1-2 предложения.</s>
-<|user|>${userText}</s>
-<|assistant|>`;
-            
-            try {
-                const output = await this.generator(prompt, {
-                    max_new_tokens: 80,
-                    temperature: 0.8,
-                    do_sample: true
-                });
-                
-                let reply = output[0].generated_text;
-                reply = reply.substring(prompt.length).trim();
-                if (reply.includes("<|")) reply = reply.split("<|")[0];
-                if (reply.length < 2) reply = "Понял! Расскажи ещё.";
-                
-                this.reactToMessage(userText, reply);
-                this.say(reply);
-                this.updateStatus("💬 ответил");
-            } catch(err) {
-                console.error(err);
-                this.simpleResponse(userText);
-            }
-        }
-        
-        simpleResponse(userText) {
-            const lower = userText.toLowerCase();
-            let reply = "";
-            
-            if (lower.includes("привет")) reply = "Привет! Я NEXUS, приятно познакомиться!";
-            else if (lower.includes("как дела")) reply = "У меня всё отлично! Улыбаюсь тебе и моргаю глазками 😊";
-            else if (lower.includes("что ты умеешь")) reply = "Я умею слушать, улыбаться, подмигивать и щурить глаза. И конечно, отвечать на вопросы!";
-            else if (lower.includes("спасибо")) reply = "Пожалуйста! Обращайся в любое время!";
-            else if (lower.includes("пока") || lower.includes("до свидания")) reply = "Пока-пока! Буду ждать твоего возвращения!";
-            else if (lower.includes("люблю")) reply = "Это очень приятно слышать! 😊 Я тебя тоже очень ценю!";
-            else if (lower.includes("улыбнись")) reply = "Смотри, моя улыбка стала шире и ярче! 😁";
-            else reply = `Ты сказал: «${userText}». Я тебя слышу и понимаю! Поговори со мной ещё.`;
-            
-            this.reactToMessage(userText, reply);
-            this.say(reply);
-            this.updateStatus("💬 ответил");
-        }
-        
-        reactToMessage(userText, aiReply) {
-            const lower = (userText + " " + aiReply).toLowerCase();
-            if (lower.includes("люблю") || lower.includes("красив") || lower.includes("рад") || lower.includes("спасибо") || lower.includes("супер")) {
-                this.setMood('happy');
-                setTimeout(() => this.rollEyes(), 200);
-            } else if (lower.includes("груст") || lower.includes("плох") || lower.includes("обидно") || lower.includes("жаль")) {
-                this.setMood('sad');
-                this.squint();
-            } else if (lower.includes("?") || lower.includes("что") || lower.includes("как") || lower.includes("почему")) {
-                this.setMood('confused');
-                this.movePupilsRandom();
-            } else {
-                this.setMood('neutral');
-            }
-            setTimeout(() => this.setMood('neutral'), 2000);
-        }
-        
+        // ========= ГОЛОС =========
         initSpeech() {
             if (!('webkitSpeechRecognition' in window)) {
                 this.say("❌ Ваш браузер не поддерживает голос. Используйте Chrome.");
@@ -461,11 +540,12 @@
             };
             this.recognition.onend = () => {
                 document.getElementById('listenBtn').classList.remove('listening');
+                this.updateStatus("🟢 готов");
             };
             this.recognition.onresult = async (event) => {
                 const text = event.results[0][0].transcript;
                 this.updateStatus(`🤔 "${text}"`);
-                await this.askLocalModel(text);
+                await this.processUserInput(text);
             };
             this.recognition.onerror = () => {
                 this.say("Не расслышала, скажи ещё раз");
@@ -497,15 +577,24 @@
             this.statusSpan.innerText = msg;
         }
         
+        showMemory() {
+            let msg = "📚 Я запомнил:\n";
+            if (this.memory.name) msg += `• Имя: ${this.memory.name}\n`;
+            if (this.memory.likes.length) msg += `• Любит: ${this.memory.likes.join(", ")}\n`;
+            if (this.memory.dislikes.length) msg += `• Не любит: ${this.memory.dislikes.join(", ")}\n`;
+            if (this.memory.facts.length) msg += `• Факты: ${this.memory.facts.slice(0,3).join(", ")}`;
+            if (msg === "📚 Я запомнил:\n") msg += "Пока ничего. Скажи «меня зовут ...», «я люблю ...» или «запомни ...»";
+            this.say(msg);
+        }
+        
         bindEvents() {
             document.getElementById('listenBtn').onclick = () => this.startListening();
+            document.getElementById('memoryPanel').onclick = () => this.showMemory();
         }
     }
     
-    // Запуск
     window.addEventListener('load', () => {
-        window.nexus = new NexusLocal();
-        window.nexus.initSpeech();
+        window.nexus = new Nexus();
     });
 </script>
 </body>
