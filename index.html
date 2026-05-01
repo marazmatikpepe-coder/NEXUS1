@@ -3,40 +3,423 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NEXUS — голосовой ассистент с улыбкой</title>
-    <link rel="stylesheet" href="style.css">
+    <title>NEXUS — живая улыбка</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0f1e 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+        }
+
+        /* Только улыбка — никакой рамы, кнопок, стикеров */
+        .nexus-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+        }
+
+        /* Лицо — бестелесная улыбка */
+        .face {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+        }
+
+        .eyes {
+            display: flex;
+            gap: 50px;
+            margin-bottom: 20px;
+        }
+
+        .eye {
+            position: relative;
+            width: 55px;
+            height: 55px;
+            background: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.05s linear;
+            box-shadow: 0 0 8px rgba(255,255,200,0.5);
+        }
+
+        .pupil {
+            width: 28px;
+            height: 28px;
+            background: #1a1a2e;
+            border-radius: 50%;
+            transition: all 0.1s ease;
+            position: relative;
+        }
+
+        /* Блик в глазах — для живости */
+        .pupil::after {
+            content: "";
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            top: 5px;
+            left: 5px;
+            opacity: 0.8;
+        }
+
+        .mouth-area {
+            font-size: 70px;
+            line-height: 1;
+            transition: all 0.15s ease;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2));
+        }
+
+        /* Речевое облачко — как у живого персонажа */
+        .speech-bubble {
+            background: rgba(255,255,240,0.95);
+            backdrop-filter: blur(8px);
+            border-radius: 40px;
+            padding: 16px 24px;
+            max-width: 400px;
+            font-size: 1.3rem;
+            color: #111;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,215,0,0.5);
+            font-weight: 500;
+            transition: all 0.2s;
+            word-break: break-word;
+        }
+
+        /* Подсказка минимальная (не мешает) */
+        .hint {
+            color: rgba(200,200,255,0.4);
+            font-size: 0.75rem;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        button {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>⚡ NEXUS</h1>
-        <p class="subtitle">анализ голоса + улыбка 😏</p>
-        
-        <div class="nexus-face" id="nexusFace">
-            <div class="eyes">
-                <div class="eye left"></div>
-                <div class="eye right"></div>
+<div class="nexus-container">
+    <div class="face">
+        <div class="eyes">
+            <div class="eye" id="leftEye">
+                <div class="pupil" id="leftPupil"></div>
             </div>
-            <div class="mouth" id="mouth">😐</div>
+            <div class="eye" id="rightEye">
+                <div class="pupil" id="rightPupil"></div>
+            </div>
         </div>
-        
-        <div class="controls">
-            <button id="listenBtn" class="listen-btn">🎤 СКАЗАТЬ</button>
-            <button id="smileBtn" class="smile-btn">😏 УЛЫБНУТЬСЯ</button>
-        </div>
-        
-        <div class="analysis" id="analysis">
-            <h3>📊 анализ голоса</h3>
-            <div id="analysisResult">—</div>
-        </div>
-        
-        <div class="response" id="response">
-            <h3>🤖 NEXUS говорит</h3>
-            <div id="responseText">—</div>
-        </div>
-        
-        <div class="status" id="status">🔴 ожидание</div>
+        <div class="mouth-area" id="mouth">😊</div>
     </div>
+
+    <div class="speech-bubble" id="speechBubble">
+        👋 Привет, я NEXUS...
+    </div>
+    <div class="hint">
+        🎤 скажи что-нибудь в микрофон — я отвечу и оживу
+    </div>
+</div>
+
+<script>
+    // =======================
+    // НЕКСУС — ЖИВАЯ УЛЫБКА
+    // =======================
+    class LivingSmile {
+        constructor() {
+            this.mouthEl = document.getElementById('mouth');
+            this.leftEye = document.getElementById('leftEye');
+            this.rightEye = document.getElementById('rightEye');
+            this.leftPupil = document.getElementById('leftPupil');
+            this.rightPupil = document.getElementById('rightPupil');
+            this.speechBubble = document.getElementById('speechBubble');
+            
+            this.currentMood = 'neutral';
+            this.isTalking = false;
+            this.animationInterval = null;
+            
+            // Эмоции и их проявления
+            this.emotions = {
+                neutral: { mouth: '😊', eyeScale: 1, pupilSize: '28px' },
+                smile: { mouth: '😁', eyeScale: 0.9, pupilSize: '26px' },
+                thinking: { mouth: '🤔', eyeScale: 0.95, pupilSize: '24px' },
+                winkLeft: { mouth: '😉', eyeScale: 1, pupilSize: '28px' },
+                winkRight: { mouth: '😉', eyeScale: 1, pupilSize: '28px' },
+                surprised: { mouth: '😲', eyeScale: 1.3, pupilSize: '20px' },
+                sad: { mouth: '😔', eyeScale: 0.8, pupilSize: '26px' },
+                happy: { mouth: '🥰', eyeScale: 1.05, pupilSize: '27px' },
+                tired: { mouth: '😪', eyeScale: 0.7, pupilSize: '22px' },
+                mischievous: { mouth: '😏', eyeScale: 0.95, pupilSize: '26px' }
+            };
+            
+            this.initSpeech();
+            this.startAutonomousLife();
+            this.updateSpeech("👀 Я живая улыбка... просто говори со мной");
+        }
+        
+        // ========= АВТОНОМНАЯ ЖИЗНЬ (без команд) =========
+        startAutonomousLife() {
+            // Моргает каждые 3-6 секунд
+            setInterval(() => this.blink(), 3500 + Math.random() * 3000);
+            
+            // Каждые 7-12 секунд делает случайное действие
+            setInterval(() => this.randomIdleAction(), 8000 + Math.random() * 5000);
+            
+            // Зрачки слегка двигаются (живой взгляд)
+            setInterval(() => this.movingPupils(), 2000);
+        }
+        
+        blink() {
+            if (this.currentMood === 'winkLeft' || this.currentMood === 'winkRight') return;
+            this.setEyesClosed(true);
+            setTimeout(() => this.setEyesClosed(false), 120);
+        }
+        
+        setEyesClosed(closed) {
+            if (closed) {
+                this.leftEye.style.transform = 'scaleY(0.05)';
+                this.rightEye.style.transform = 'scaleY(0.05)';
+            } else {
+                this.leftEye.style.transform = 'scaleY(1)';
+                this.rightEye.style.transform = 'scaleY(1)';
+            }
+        }
+        
+        randomIdleAction() {
+            const actions = ['think', 'wink', 'surprise', 'lookAround', 'smileBig', 'tired'];
+            const action = actions[Math.floor(Math.random() * actions.length)];
+            
+            switch(action) {
+                case 'think':
+                    this.setMood('thinking', 1800);
+                    break;
+                case 'wink':
+                    this.wink();
+                    break;
+                case 'surprise':
+                    this.setMood('surprised', 1300);
+                    break;
+                case 'lookAround':
+                    this.lookAround();
+                    break;
+                case 'smileBig':
+                    this.setMood('happy', 1500);
+                    break;
+                case 'tired':
+                    this.setMood('tired', 1700);
+                    break;
+            }
+        }
+        
+        wink() {
+            this.setMood('winkLeft', 300);
+            setTimeout(() => {
+                if (this.currentMood === 'winkLeft') this.setMood('neutral', 200);
+            }, 250);
+        }
+        
+        lookAround() {
+            this.leftPupil.style.transform = 'translateX(8px)';
+            this.rightPupil.style.transform = 'translateX(-8px)';
+            setTimeout(() => {
+                this.leftPupil.style.transform = 'translateX(0)';
+                this.rightPupil.style.transform = 'translateX(0)';
+            }, 800);
+        }
+        
+        movingPupils() {
+            if (Math.random() > 0.5 && this.currentMood !== 'winkLeft' && this.currentMood !== 'winkRight') {
+                const shiftX = (Math.random() - 0.5) * 6;
+                const shiftY = (Math.random() - 0.5) * 4;
+                this.leftPupil.style.transform = `translate(${shiftX}px, ${shiftY}px)`;
+                this.rightPupil.style.transform = `translate(${shiftX}px, ${shiftY}px)`;
+                setTimeout(() => {
+                    if (Math.random() > 0.6) {
+                        this.leftPupil.style.transform = 'translate(0,0)';
+                        this.rightPupil.style.transform = 'translate(0,0)';
+                    }
+                }, 1500);
+            }
+        }
+        
+        setMood(moodName, duration = 800) {
+            const mood = this.emotions[moodName];
+            if (!mood) return;
+            
+            this.currentMood = moodName;
+            this.mouthEl.textContent = mood.mouth;
+            
+            // Анимация глаз
+            if (moodName === 'winkLeft') {
+                this.leftEye.style.transform = 'scaleY(0.1)';
+                this.rightEye.style.transform = 'scaleY(1)';
+            } else if (moodName === 'winkRight') {
+                this.leftEye.style.transform = 'scaleY(1)';
+                this.rightEye.style.transform = 'scaleY(0.1)';
+            } else {
+                this.leftEye.style.transform = 'scaleY(1)';
+                this.rightEye.style.transform = 'scaleY(1)';
+                this.leftEye.style.transform = `scale(${mood.eyeScale})`;
+                this.rightEye.style.transform = `scale(${mood.eyeScale})`;
+                this.leftPupil.style.width = mood.pupilSize;
+                this.rightPupil.style.width = mood.pupilSize;
+            }
+            
+            if (duration && duration > 0) {
+                setTimeout(() => {
+                    if (this.currentMood === moodName) {
+                        this.setMood('neutral');
+                    }
+                }, duration);
+            }
+        }
+        
+        // ========= РАСПОЗНАВАНИЕ ГОЛОСА И ЖИВЫЕ ОТВЕТЫ =========
+        initSpeech() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                this.updateSpeech("❌ браузер не поддерживает голос... но я всё равно живая");
+                return;
+            }
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            this.recognition.lang = 'ru-RU';
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            
+            this.recognition.onstart = () => {
+                this.setMood('thinking', 0);
+                this.updateSpeech("🎧 слушаю...");
+            };
+            
+            this.recognition.onend = () => {
+                setTimeout(() => {
+                    if (this.currentMood === 'thinking') this.setMood('neutral');
+                }, 300);
+                this.startListening(); // всегда слушает
+            };
+            
+            this.recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                this.processAnswer(text);
+            };
+            
+            this.recognition.onerror = () => {
+                this.updateSpeech("👂 не расслышала... скажи ещё");
+                this.setMood('sad', 1200);
+            };
+            
+            this.startListening();
+        }
+        
+        startListening() {
+            if (this.recognition && !this.listening) {
+                try {
+                    this.recognition.start();
+                    this.listening = true;
+                } catch(e) {
+                    setTimeout(() => this.startListening(), 1000);
+                }
+            }
+        }
+        
+        processAnswer(text) {
+            const lower = text.toLowerCase();
+            let answer = "";
+            
+            // Эмоциональные реакции на ключевые слова + смена настроения
+            if (lower.includes("привет") || lower.includes("здравствуй")) {
+                answer = "Приветик! Как у тебя дела? 😊";
+                this.setMood('happy', 1500);
+            } 
+            else if (lower.includes("как дела") || lower.includes("как ты")) {
+                answer = "Улыбаюсь и моргаю, живу своей маленькой жизнью ✨";
+                this.setMood('mischievous', 1300);
+            }
+            else if (lower.includes("улыбнись")) {
+                answer = "Видишь? Я всегда улыбаюсь тебе 😁";
+                this.setMood('smile', 1800);
+            }
+            else if (lower.includes("задумайся") || lower.includes("подумай")) {
+                answer = "Ммм... интересный вопрос 🤔";
+                this.setMood('thinking', 2000);
+            }
+            else if (lower.includes("подмигни")) {
+                answer = "😉 лови подмиг";
+                this.wink();
+            }
+            else if (lower.includes("спасибо")) {
+                answer = "Пожалуйста! Я для тебя стараюсь 🥰";
+                this.setMood('happy', 1400);
+            }
+            else if (lower.includes("пока") || lower.includes("прощай")) {
+                answer = "Пока-пока! Заглядывай ещё 😘";
+                this.setMood('smile', 1500);
+            }
+            else {
+                answer = `Ты сказал: «${text}». Я тебя слышу и живу своей улыбкой 💛`;
+                this.setMood('surprised', 1000);
+                setTimeout(() => this.setMood('neutral'), 1100);
+            }
+            
+            this.updateSpeech(answer);
+            
+            // Имитация живой речи (мимика под текст)
+            this.animateWhileTalking(answer);
+        }
+        
+        animateWhileTalking(text) {
+            // Меняет рот на несколько эмоций во время "мысли"
+            const mouthMoves = ['😊', '😄', '😏', '😌', '😊'];
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= mouthMoves.length) {
+                    clearInterval(interval);
+                    this.mouthEl.textContent = this.emotions[this.currentMood]?.mouth || '😊';
+                } else {
+                    this.mouthEl.textContent = mouthMoves[i];
+                    i++;
+                }
+            }, 180);
+            setTimeout(() => clearInterval(interval), 1000);
+        }
+        
+        updateSpeech(text) {
+            this.speechBubble.textContent = text;
+            // Пузырь появляется с мягкой анимацией
+            this.speechBubble.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                this.speechBubble.style.transform = 'scale(1)';
+            }, 150);
+        }
+    }
     
-    <script src="script.js"></script>
+    // Запуск живой улыбки NEXUS
+    window.addEventListener('load', () => {
+        window.nexus = new LivingSmile();
+    });
+</script>
 </body>
 </html>
