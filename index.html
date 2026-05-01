@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NEXUS — память + живая улыбка</title>
+    <title>NEXUS — ИИ с душой</title>
     <style>
         * {
             margin: 0;
@@ -13,528 +13,441 @@
         }
 
         body {
-            background: linear-gradient(135deg, #0a0f1e 0%, #0f172a 100%);
+            background: radial-gradient(circle at 20% 30%, #0a0f2a, #030617);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: 'Segoe UI', 'Courier New', monospace;
+            font-family: 'Segoe UI', 'Inter', system-ui, monospace;
             padding: 20px;
         }
 
-        .nexus-container {
+        .container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 30px;
+            gap: 35px;
             width: 100%;
-            max-width: 550px;
+            max-width: 600px;
         }
 
         .face {
-            position: relative;
-            width: 300px;
-            height: 280px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            background: transparent;
+            background: rgba(10, 20, 40, 0.4);
+            border-radius: 120px;
+            padding: 25px 40px 35px;
+            backdrop-filter: blur(4px);
         }
 
         .eyes {
             display: flex;
-            gap: 60px;
+            gap: 55px;
             margin-bottom: 20px;
         }
 
         .eye {
-            width: 60px;
-            height: 60px;
-            background: white;
+            width: 70px;
+            height: 70px;
+            background: #fefefe;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 10px rgba(59,130,246,0.5);
+            box-shadow: 0 0 0 3px #2d4a8a, 0 0 0 6px rgba(59,130,246,0.3);
+            transition: all 0.05s linear;
+            position: relative;
         }
 
         .pupil {
-            width: 28px;
-            height: 28px;
-            background: #0f172a;
+            width: 32px;
+            height: 32px;
+            background: #0a0f2a;
             border-radius: 50%;
-            transition: all 0.1s ease;
+            transition: all 0.08s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             position: relative;
         }
 
         .pupil::after {
             content: "";
             position: absolute;
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             background: white;
             border-radius: 50%;
-            top: 5px;
-            left: 5px;
+            top: 6px;
+            left: 6px;
+            opacity: 0.9;
         }
 
         canvas {
             display: block;
             margin-top: 5px;
-            filter: drop-shadow(0 0 8px #3b82f6);
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+
+        .speech-bubble {
+            background: rgba(20, 30, 55, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 36px;
+            padding: 18px 24px;
+            width: 100%;
+            font-size: 1.2rem;
+            color: #b9e0ff;
+            text-align: center;
+            border: 1px solid #3b82f6;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            font-weight: 500;
+            word-break: break-word;
+            min-height: 85px;
         }
 
         .button-group {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             flex-wrap: wrap;
             justify-content: center;
         }
 
         button {
-            background: #1e293b;
+            background: #111827;
             border: 2px solid #3b82f6;
-            color: #3b82f6;
-            padding: 12px 24px;
+            color: #60a5fa;
+            padding: 12px 28px;
             font-size: 1.1rem;
             font-weight: bold;
             border-radius: 60px;
             cursor: pointer;
             transition: 0.2s;
-            font-family: monospace;
+            font-family: inherit;
         }
 
         button:hover {
             background: #3b82f6;
-            color: #0f172a;
-            box-shadow: 0 0 15px #3b82f6;
+            color: white;
+            box-shadow: 0 0 16px #3b82f6;
             transform: scale(1.02);
+            border-color: white;
         }
 
         .listen-btn {
-            background: #3b82f6;
+            background: #2563eb;
             color: white;
-            box-shadow: 0 0 10px #3b82f6;
+            box-shadow: 0 0 8px #3b82f6;
         }
 
         .listen-btn.listening {
-            background: #ef4444;
-            border-color: #ef4444;
-            animation: pulse 1s infinite;
+            background: #dc2626;
+            border-color: #ff8888;
+            animation: pulseMic 1s infinite;
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(239,68,68,0); }
-            100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        @keyframes pulseMic {
+            0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.6); }
+            70% { box-shadow: 0 0 0 14px rgba(220,38,38,0); }
+            100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); }
         }
 
-        .speech-bubble {
-            background: rgba(30,41,59,0.95);
-            backdrop-filter: blur(8px);
-            border-radius: 30px;
-            padding: 16px 20px;
-            width: 100%;
-            font-size: 1.2rem;
-            color: #93c5fd;
-            text-align: center;
-            border: 1px solid #3b82f6;
-            word-break: break-word;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: #0f172a;
-            border: 2px solid #3b82f6;
-            border-radius: 30px;
-            padding: 20px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
-            color: #93c5fd;
-        }
-
-        .modal-content h3 {
-            margin-bottom: 15px;
-            color: #3b82f6;
-        }
-
-        .memory-item {
-            background: #1e293b;
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 15px;
-        }
-
-        .memory-key {
-            font-weight: bold;
-            color: #60a5fa;
-        }
-
-        .memory-value {
-            margin-top: 5px;
-            word-break: break-word;
-        }
-
-        .memory-edit {
-            margin-top: 8px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .memory-edit input {
-            flex: 1;
-            padding: 6px;
-            border-radius: 20px;
-            border: none;
-            background: #334155;
-            color: white;
-        }
-
-        .small-btn {
-            padding: 4px 12px;
-            font-size: 0.8rem;
-            background: #334155;
-        }
-
-        .close-modal {
-            background: #ef4444;
-            border-color: #ef4444;
-            color: white;
-            margin-top: 15px;
-        }
-
-        .copy-all {
-            background: #10b981;
-            border-color: #10b981;
-            color: white;
-            margin-bottom: 10px;
+        .status {
+            font-size: 0.75rem;
+            color: #5f7f9e;
+            background: rgba(0,0,0,0.4);
+            padding: 5px 12px;
+            border-radius: 40px;
         }
     </style>
 </head>
 <body>
-<div class="nexus-container">
+<div class="container">
     <div class="face">
         <div class="eyes">
-            <div class="eye"><div class="pupil" id="leftPupil"></div></div>
-            <div class="eye"><div class="pupil" id="rightPupil"></div></div>
+            <div class="eye" id="leftEye"><div class="pupil" id="leftPupil"></div></div>
+            <div class="eye" id="rightEye"><div class="pupil" id="rightPupil"></div></div>
         </div>
-        <canvas id="smileCanvas" width="200" height="80" style="width:200px; height:80px"></canvas>
+        <canvas id="smileCanvas" width="220" height="85" style="width:220px; height:85px"></canvas>
     </div>
 
     <div class="speech-bubble" id="speechBubble">
-        💙 Я NEXUS. Наполни меня знаниями через память
+        💙 Я NEXUS с ИИ-мозгом. Говори со мной
     </div>
 
     <div class="button-group">
         <button id="listenBtn" class="listen-btn">🎤 ГОВОРИТЬ</button>
-        <button id="memoryBtn">📚 ПАМЯТЬ</button>
     </div>
-</div>
-
-<div id="memoryModal" class="modal">
-    <div class="modal-content">
-        <h3>📖 Память NEXUS</h3>
-        <button id="copyAllMemory" class="copy-all small-btn">📋 Скопировать всё</button>
-        <div id="memoryList"></div>
-        <button id="closeModal" class="close-modal small-btn">Закрыть</button>
-    </div>
+    <div class="status" id="status">🔵 готов</div>
 </div>
 
 <script>
+    // =======================
+    // NEXUS — с DeepSeek API + живая мимика
+    // =======================
     class Nexus {
         constructor() {
+            // КЛЮЧ DeepSeek (твой)
+            this.apiKey = "sk-209473eaccec47febeb7ee7e1e5db676";
+            this.apiUrl = "https://api.deepseek.com/v1/chat/completions";
+            
+            // История диалога (память разговора)
+            this.conversationHistory = [
+                { role: "system", content: "Ты NEXUS — живой, эмоциональный ассистент с душой. У тебя есть улыбка, глаза. Ты можешь радоваться, грустить, удивляться. Отвечай коротко, но тепло и осмысленно. Используй до 2-3 предложений." }
+            ];
+            
+            // Элементы
             this.canvas = document.getElementById('smileCanvas');
             this.ctx = this.canvas.getContext('2d');
+            this.leftEye = document.getElementById('leftEye');
+            this.rightEye = document.getElementById('rightEye');
             this.leftPupil = document.getElementById('leftPupil');
             this.rightPupil = document.getElementById('rightPupil');
             this.speechBubble = document.getElementById('speechBubble');
+            this.statusSpan = document.getElementById('status');
             
-            // Улыбка рисуется ВВЕРХ (радостная)
-            this.smileParams = {
-                width: 140,
-                curve: 38,     // положительный = улыбка вверх
-                thickness: 5,
-                color: '#3b82f6'
-            };
+            // Параметры улыбки
+            this.smileState = { width: 150, curve: 32, thickness: 5, color: "#60a5fa" };
+            this.currentMood = "neutral";
             
-            this.memory = this.loadMemory();
             this.initCanvas();
             this.initSpeech();
-            this.startAutonomousLife();
+            this.startAutoMimic();
             this.bindEvents();
-            
-            this.updateSpeech("💙 Скажи: «запомни, что я люблю кофе» — и я буду знать");
             this.drawSmile();
+            this.updateStatus("🔵 слушаю по кнопке");
         }
         
         initCanvas() {
-            this.canvas.width = 200;
-            this.canvas.height = 80;
+            this.canvas.width = 220;
+            this.canvas.height = 85;
         }
         
+        // ========= РИСОВАНИЕ УЛЫБКИ (вверх, вниз, плоская) =========
         drawSmile() {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            const w = this.smileState.width;
+            const curve = this.smileState.curve; // положительная = вверх, отрицательная = вниз
+            const centerX = this.canvas.width / 2;
+            const baseY = this.canvas.height - 18;
             
-            const w = this.smileParams.width;
-            const curve = this.smileParams.curve;
-            const xCenter = this.canvas.width / 2;
-            const yBase = this.canvas.height - 15;
-            
-            const startX = xCenter - w/2;
-            const endX = xCenter + w/2;
-            const controlX = xCenter;
-            const controlY = yBase - curve;  // минус = вверх (улыбка)
+            const startX = centerX - w/2;
+            const endX = centerX + w/2;
+            const controlX = centerX;
+            const controlY = baseY - curve;
             
             this.ctx.beginPath();
-            this.ctx.moveTo(startX, yBase);
-            this.ctx.quadraticCurveTo(controlX, controlY, endX, yBase);
-            this.ctx.strokeStyle = this.smileParams.color;
-            this.ctx.lineWidth = this.smileParams.thickness;
-            this.ctx.lineCap = 'round';
+            this.ctx.moveTo(startX, baseY);
+            this.ctx.quadraticCurveTo(controlX, controlY, endX, baseY);
+            this.ctx.strokeStyle = this.smileState.color;
+            this.ctx.lineWidth = this.smileState.thickness;
+            this.ctx.lineCap = "round";
             this.ctx.stroke();
-            
-            if (curve > 25) {
-                this.ctx.beginPath();
-                this.ctx.arc(xCenter - 25, yBase - curve + 8, 3, 0, Math.PI * 2);
-                this.ctx.fillStyle = '#60a5fa';
-                this.ctx.fill();
-            }
         }
         
-        animateSmile(targetParams, duration = 400) {
-            const startParams = { ...this.smileParams };
+        animateSmile(target, duration = 280) {
+            const start = { ...this.smileState };
             const startTime = performance.now();
-            const animate = (now) => {
-                const elapsed = now - startTime;
-                const t = Math.min(1, elapsed / duration);
-                this.smileParams.width = startParams.width + (targetParams.width - startParams.width) * t;
-                this.smileParams.curve = startParams.curve + (targetParams.curve - startParams.curve) * t;
-                this.smileParams.thickness = startParams.thickness + (targetParams.thickness - startParams.thickness) * t;
+            const step = (now) => {
+                const t = Math.min(1, (now - startTime) / duration);
+                this.smileState.width = start.width + (target.width - start.width) * t;
+                this.smileState.curve = start.curve + (target.curve - start.curve) * t;
+                this.smileState.thickness = start.thickness + (target.thickness - start.thickness) * t;
                 this.drawSmile();
-                if (t < 1) requestAnimationFrame(animate);
+                if (t < 1) requestAnimationFrame(step);
             };
-            requestAnimationFrame(animate);
+            requestAnimationFrame(step);
         }
         
         setMood(mood) {
+            this.currentMood = mood;
             switch(mood) {
                 case 'happy':
-                    this.animateSmile({ width: 165, curve: 52, thickness: 6, color: '#60a5fa' }, 300);
+                    this.animateSmile({ width: 168, curve: 48, thickness: 5.5, color: "#3b82f6" });
                     break;
-                case 'thinking':
-                    this.animateSmile({ width: 130, curve: 20, thickness: 4, color: '#fbbf24' }, 400);
+                case 'sad':
+                    this.animateSmile({ width: 148, curve: -28, thickness: 4.5, color: "#94a3b8" });
+                    break;
+                case 'confused':
+                    this.animateSmile({ width: 140, curve: 5, thickness: 4, color: "#f97316" });
                     break;
                 default:
-                    this.animateSmile({ width: 145, curve: 38, thickness: 5, color: '#3b82f6' }, 300);
+                    this.animateSmile({ width: 152, curve: 30, thickness: 5, color: "#60a5fa" });
             }
         }
         
-        startAutonomousLife() {
-            setInterval(() => this.blink(), 4000);
-            setInterval(() => {
-                this.setMood('happy');
-                setTimeout(() => this.setMood('neutral'), 1500);
-            }, 8000);
-        }
-        
+        // ========= ГЛАЗА: моргание, прищур, движение =========
         blink() {
-            this.leftPupil.style.transform = 'scaleY(0.05)';
-            this.rightPupil.style.transform = 'scaleY(0.05)';
+            this.leftEye.style.transform = "scaleY(0.05)";
+            this.rightEye.style.transform = "scaleY(0.05)";
             setTimeout(() => {
-                this.leftPupil.style.transform = 'scaleY(1)';
-                this.rightPupil.style.transform = 'scaleY(1)';
-            }, 100);
+                this.leftEye.style.transform = "scaleY(1)";
+                this.rightEye.style.transform = "scaleY(1)";
+            }, 90);
         }
         
+        squint() {
+            this.leftEye.style.transform = "scale(0.85, 0.3)";
+            this.rightEye.style.transform = "scale(0.85, 0.3)";
+            setTimeout(() => {
+                this.leftEye.style.transform = "scale(1,1)";
+                this.rightEye.style.transform = "scale(1,1)";
+            }, 400);
+        }
+        
+        rollEyes() {
+            this.leftPupil.style.transform = "translate(8px, -4px)";
+            this.rightPupil.style.transform = "translate(8px, -4px)";
+            setTimeout(() => {
+                this.leftPupil.style.transform = "translate(0,0)";
+                this.rightPupil.style.transform = "translate(0,0)";
+            }, 500);
+        }
+        
+        movePupilsRandom() {
+            const x = (Math.random() - 0.5) * 6;
+            const y = (Math.random() - 0.5) * 5;
+            this.leftPupil.style.transform = `translate(${x}px, ${y}px)`;
+            this.rightPupil.style.transform = `translate(${x}px, ${y}px)`;
+            setTimeout(() => {
+                if (Math.random() > 0.7) {
+                    this.leftPupil.style.transform = "translate(0,0)";
+                    this.rightPupil.style.transform = "translate(0,0)";
+                }
+            }, 1200);
+        }
+        
+        startAutoMimic() {
+            setInterval(() => this.blink(), 3800);
+            setInterval(() => this.movePupilsRandom(), 4200);
+            // Иногда щурится
+            setInterval(() => {
+                if (Math.random() > 0.7) this.squint();
+            }, 7000);
+        }
+        
+        // ========= ГОЛОСОВОЙ ВВОД =========
         initSpeech() {
             if (!('webkitSpeechRecognition' in window)) {
-                this.updateSpeech("❌ Голос не поддерживается, но память работает");
+                this.say("❌ Ваш браузер не поддерживает голос. Используйте Chrome.");
                 return;
             }
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             this.recognition = new SpeechRecognition();
             this.recognition.lang = 'ru-RU';
             this.recognition.continuous = false;
+            this.recognition.interimResults = false;
             
             this.recognition.onstart = () => {
                 document.getElementById('listenBtn').classList.add('listening');
-                this.setMood('thinking');
-                this.updateSpeech("🎧 слушаю...");
+                this.updateStatus("🎧 слушаю...");
+                this.setMood('confused');
+                this.sayRaw("Слушаю...");
             };
             this.recognition.onend = () => {
                 document.getElementById('listenBtn').classList.remove('listening');
+                this.updateStatus("🔵 обрабатываю");
             };
-            this.recognition.onresult = (event) => {
+            this.recognition.onresult = async (event) => {
                 const text = event.results[0][0].transcript;
-                this.processCommand(text);
+                this.updateStatus(`🤔 думаю...`);
+                this.setMood('confused');
+                await this.askDeepSeek(text);
             };
             this.recognition.onerror = () => {
-                this.updateSpeech("👂 не расслышала, попробуй ещё");
-                this.setMood('neutral');
+                this.say("Не расслышала, скажи еще раз");
+                this.setMood('sad');
+                this.updateStatus("🔴 ошибка, попробуй снова");
+                setTimeout(() => this.setMood('neutral'), 1200);
             };
         }
         
         startListening() {
             if (this.recognition && !document.getElementById('listenBtn').classList.contains('listening')) {
-                try {
-                    this.recognition.start();
-                } catch(e) {}
+                try { this.recognition.start(); } catch(e) { this.say("Микрофон не доступен"); }
             }
         }
         
-        // ========= ГЛАВНЫЙ МОЗГ: ЖИВЁТ ТОЛЬКО ИЗ ПАМЯТИ =========
-        processCommand(text) {
-            const lower = text.toLowerCase();
+        // ========= DEEPSEEK API (ИИ-МОЗГ) =========
+        async askDeepSeek(userText) {
+            this.conversationHistory.push({ role: "user", content: userText });
             
-            // ЗАПОМНИТЬ: "запомни что-то"
-            const rememberMatch = text.match(/запомни[: ]?\s*(.+)/i);
-            if (rememberMatch) {
-                const fact = rememberMatch[1].trim();
-                const id = Date.now().toString();
-                this.memory[id] = fact;
-                this.saveMemory();
-                this.updateSpeech(`✅ Запомнила: ${fact.substring(0, 80)}`);
-                this.setMood('happy');
-                setTimeout(() => this.setMood('neutral'), 1000);
-                return;
+            const requestBody = {
+                model: "deepseek-chat",
+                messages: this.conversationHistory,
+                temperature: 0.85,
+                max_tokens: 300
+            };
+            
+            try {
+                const response = await fetch(this.apiUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${this.apiKey}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) throw new Error(`API error ${response.status}`);
+                const data = await response.json();
+                const reply = data.choices[0].message.content;
+                
+                // Сохраняем в историю
+                this.conversationHistory.push({ role: "assistant", content: reply });
+                if (this.conversationHistory.length > 12) {
+                    this.conversationHistory = [this.conversationHistory[0], ...this.conversationHistory.slice(-10)];
+                }
+                
+                // Анализируем эмоцию из ответа или текста пользователя
+                this.reactToMessage(userText, reply);
+                this.say(reply);
+                this.updateStatus("💬 ответил");
+            } catch (err) {
+                console.error(err);
+                this.say("Ошибка соединения с ИИ, но я рядом");
+                this.setMood('sad');
+                this.updateStatus("⚠️ API ошибка");
             }
-            
-            // Если память пуста — просим наполнить
-            if (Object.keys(this.memory).length === 0) {
-                this.updateSpeech("📭 Моя память пуста. Скажи: «запомни, что я люблю собак» или открой «Память» и добавь факты");
-                this.setMood('thinking');
-                return;
-            }
-            
-            // АНАЛИЗ: ищем в памяти всё, что связано с вопросом
-            const allFacts = Object.values(this.memory);
-            const relevantFacts = allFacts.filter(fact => 
-                fact.toLowerCase().includes(lower) || 
-                this.isRelated(lower, fact)
-            );
-            
-            if (relevantFacts.length > 0) {
-                let answer = "🔍 По моей памяти: ";
-                answer += relevantFacts.slice(0, 3).join(". ");
-                if (relevantFacts.length > 3) answer += " (и ещё кое-что)";
-                this.updateSpeech(answer);
+        }
+        
+        // Живая реакция на смысл
+        reactToMessage(userText, aiReply) {
+            const lower = (userText + " " + aiReply).toLowerCase();
+            if (lower.includes("люблю") || lower.includes("красив") || lower.includes("рад")) {
                 this.setMood('happy');
+                this.rollEyes(); // довольный закат глаз
+            } else if (lower.includes("груст") || lower.includes("плох") || lower.includes("обидно")) {
+                this.setMood('sad');
+                this.squint();
+            } else if (lower.includes("?") || lower.includes("что") || lower.includes("как")) {
+                this.setMood('confused');
+                this.movePupilsRandom();
             } else {
-                this.updateSpeech(`🤔 В моей памяти нет ничего про «${text}». Скажи «запомни...» чтобы я узнал.`);
-                this.setMood('thinking');
+                this.setMood('neutral');
             }
             setTimeout(() => this.setMood('neutral'), 2000);
         }
         
-        // Простой анализатор связей (можно расширять)
-        isRelated(question, fact) {
-            const keywords = question.split(/\s+/);
-            for (let kw of keywords) {
-                if (kw.length > 3 && fact.toLowerCase().includes(kw)) return true;
-            }
-            return false;
+        // ========= ГОЛОСОВОЙ ВЫВОД (ДИКТОР) =========
+        say(text) {
+            this.sayRaw(text);
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ru-RU';
+            utterance.rate = 0.95;
+            utterance.pitch = 1.05;
+            utterance.volume = 1;
+            window.speechSynthesis.cancel(); // избежать наслоения
+            window.speechSynthesis.speak(utterance);
         }
         
-        updateSpeech(text) {
-            this.speechBubble.textContent = text;
+        sayRaw(text) {
+            this.speechBubble.innerHTML = text.replace(/\\n/g, '<br>');
         }
         
-        loadMemory() {
-            const saved = localStorage.getItem('nexus_memory_v2');
-            return saved ? JSON.parse(saved) : {};
-        }
-        
-        saveMemory() {
-            localStorage.setItem('nexus_memory_v2', JSON.stringify(this.memory));
-        }
-        
-        showMemoryModal() {
-            const modal = document.getElementById('memoryModal');
-            const container = document.getElementById('memoryList');
-            container.innerHTML = '';
-            
-            if (Object.keys(this.memory).length === 0) {
-                container.innerHTML = '<p>📭 Память пуста. Скажи: "запомни, что я люблю солнце"</p>';
-            } else {
-                for (const [id, fact] of Object.entries(this.memory)) {
-                    const div = document.createElement('div');
-                    div.className = 'memory-item';
-                    div.innerHTML = `
-                        <div class="memory-value">📌 ${fact}</div>
-                        <div class="memory-edit">
-                            <input type="text" placeholder="новый текст" id="edit-${id}">
-                            <button class="small-btn save-edit" data-id="${id}">✏️</button>
-                            <button class="small-btn delete-memory" data-id="${id}">🗑️</button>
-                        </div>
-                    `;
-                    container.appendChild(div);
-                }
-            }
-            
-            modal.style.display = 'flex';
-            
-            document.querySelectorAll('.save-edit').forEach(btn => {
-                btn.onclick = () => {
-                    const id = btn.dataset.id;
-                    const newVal = document.getElementById(`edit-${id}`).value;
-                    if (newVal) {
-                        this.memory[id] = newVal;
-                        this.saveMemory();
-                        this.showMemoryModal();
-                        this.updateSpeech(`📝 Обновила факт`);
-                    }
-                };
-            });
-            
-            document.querySelectorAll('.delete-memory').forEach(btn => {
-                btn.onclick = () => {
-                    const id = btn.dataset.id;
-                    delete this.memory[id];
-                    this.saveMemory();
-                    this.showMemoryModal();
-                    this.updateSpeech(`🗑️ Удалила из памяти`);
-                };
-            });
-        }
-        
-        copyAllMemory() {
-            let text = "ПАМЯТЬ NEXUS:\n";
-            for (const fact of Object.values(this.memory)) {
-                text += `• ${fact}\n`;
-            }
-            navigator.clipboard.writeText(text);
-            this.updateSpeech("📋 Вся память скопирована!");
+        updateStatus(msg) {
+            this.statusSpan.innerText = msg;
         }
         
         bindEvents() {
             document.getElementById('listenBtn').onclick = () => this.startListening();
-            document.getElementById('memoryBtn').onclick = () => this.showMemoryModal();
-            document.getElementById('closeModal').onclick = () => {
-                document.getElementById('memoryModal').style.display = 'none';
-            };
-            document.getElementById('copyAllMemory').onclick = () => this.copyAllMemory();
-            window.onclick = (e) => {
-                if (e.target === document.getElementById('memoryModal')) {
-                    document.getElementById('memoryModal').style.display = 'none';
-                }
-            };
         }
     }
     
