@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NEXUS — полная память (17 блоков)</title>
+    <title>NEXUS — задаёт вопросы + объясняет слова</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body {
@@ -74,6 +74,15 @@
         .status { font-size: 0.75rem; color: #5f7f9e; background: rgba(0,0,0,0.4); padding: 5px 12px; border-radius: 40px; }
         .memory-panel { background: rgba(0,0,0,0.5); border-radius: 20px; padding: 10px 15px; width: 100%; font-size: 0.75rem; color: #8ba9d4; text-align: center; cursor: pointer; }
         .memory-panel:hover { background: rgba(59,130,246,0.3); }
+        .question-badge {
+            background: rgba(59,130,246,0.2);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.7rem;
+            color: #60a5fa;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -85,20 +94,21 @@
         </div>
         <canvas id="smileCanvas" width="220" height="85"></canvas>
     </div>
-    <div class="speech-bubble" id="speechBubble">💙 Я NEXUS с полной памятью. Спрашивай что угодно!</div>
+    <div class="speech-bubble" id="speechBubble">
+        💙 Я NEXUS. Можешь спросить значение любого слова!
+    </div>
     <div class="button-group">
         <button id="listenBtn" class="listen-btn">🎤 ГОВОРИТЬ</button>
     </div>
     <div class="status" id="status">🟢 готов</div>
-    <div class="memory-panel" id="memoryPanel">📚 ПОКАЗАТЬ ВСЮ ПАМЯТЬ</div>
+    <div class="memory-panel" id="memoryPanel">📚 ПОКАЗАТЬ ПАМЯТЬ</div>
 </div>
 
 <script>
     // ==================================================
-    // NEXUS — ПОЛНАЯ БАЗА ЗНАНИЙ (17 БЛОКОВ)
-    // Формат: ключевая_фраза -> переменная -> ответ
+    // NEXUS — ЗАДАЁТ ВОПРОСЫ + ОБЪЯСНЯЕТ СЛОВА
     // ==================================================
-    class NexusFullMemory {
+    class NexusFull {
         constructor() {
             // Элементы
             this.canvas = document.getElementById('smileCanvas');
@@ -108,88 +118,27 @@
             this.speechBubble = document.getElementById('speechBubble');
             this.statusSpan = document.getElementById('status');
             
-            // ========== ПЕРЕМЕННЫЕ ПАМЯТИ (ВСЕ БЛОКИ) ==========
+            // Память пользователя
             this.mem = {
-                // Блок 1: Имя
-                BOT_NAME: "NEXUS",
                 USER_NAME: null,
-                
-                // Блок 2: Возраст
                 USER_AGE: null,
-                
-                // Блок 3: Город и страна
                 USER_CITY: null,
-                USER_COUNTRY: null,
-                
-                // Блок 4: Еда
                 FAVORITE_FOOD: null,
-                FAVORITE_DISH: null,
-                FAVORITE_CUISINE: null,
-                DIET_TYPE: null,
-                
-                // Блок 5: Хобби
                 USER_HOBBIES: [],
-                
-                // Блок 6: Время (системное)
-                
-                // Блок 7: Работа
+                FAMILY: null,
                 JOB_TITLE: null,
-                COMPANY_NAME: null,
-                WORK_SCHEDULE: null,
-                MONTHLY_INCOME: null,
-                
-                // Блок 8: Здоровье
-                HEALTH_STATUS: null,
-                TEMPERATURE: null,
-                BLOOD_PRESSURE: null,
-                HEART_RATE: null,
-                
-                // Блок 9: Семья
-                RELATIONSHIP_STATUS: null,
-                CHILDREN_COUNT: null,
-                PETS: [],
-                
-                // Блок 10: Финансы
-                CURRENT_BALANCE: null,
-                MONTHLY_EXPENSES: null,
-                DEBTS: null,
-                
-                // Блок 11: Техника
-                PHONE_MODEL: null,
-                COMPUTER_OS: null,
-                COMPUTER_CPU: null,
-                COMPUTER_RAM: null,
-                
-                // Блок 12: Образование
-                USER_EDUCATION_LEVEL: null,
-                USER_UNIVERSITY: null,
-                USER_LANGUAGES: [],
-                
-                // Блок 13: Путешествия
-                COUNTRIES_VISITED: [],
-                FAVORITE_TRANSPORT: null,
-                HAS_DRIVING_LICENSE: null,
-                CAR_MODEL: null,
-                
-                // Блок 14: Развлечения
-                FAVORITE_MOVIE_GENRE: null,
-                FAVORITE_TV_SERIES: null,
-                FAVORITE_GAME: null,
-                FAVORITE_BOOK_AUTHOR: null,
-                
-                // Блок 15: Психология
-                PERSONALITY_TYPE: null,
-                STRENGTHS: null,
-                WEAKNESSES: null,
-                FEARS: null,
-                VALUES: null,
-                
-                // Блок 16: Планы
-                USER_GOALS: null,
-                DREAM_JOB: null,
-                BUCKET_LIST: [],
-                
-                // Блок 17: Системные (встроены в логику)
+                // Словарь (слово -> определение)
+                DICTIONARY: {}
+            };
+            
+            // Какие вопросы уже задавал (чтобы не повторяться)
+            this.askedQuestions = {
+                name: false,
+                age: false,
+                city: false,
+                food: false,
+                hobby: false,
+                family: false
             };
             
             this.loadMemory();
@@ -199,19 +148,73 @@
             this.initSpeech();
             this.bindEvents();
             
-            this.updateStatus("🟢 полная память загружена");
+            // Через 2 секунды задать первый вопрос, если память пуста
+            setTimeout(() => this.askNextQuestion(), 2000);
+            
+            this.updateStatus("🟢 готов отвечать на вопросы и объяснять слова");
         }
         
         loadMemory() {
-            const saved = localStorage.getItem('nexus_full_memory');
+            const saved = localStorage.getItem('nexus_full_v2');
             if (saved) {
                 const loaded = JSON.parse(saved);
                 Object.assign(this.mem, loaded);
+                if (this.mem.askedQuestions) Object.assign(this.askedQuestions, this.mem.askedQuestions);
             }
         }
         
         saveMemory() {
-            localStorage.setItem('nexus_full_memory', JSON.stringify(this.mem));
+            const toSave = {
+                ...this.mem,
+                askedQuestions: this.askedQuestions
+            };
+            localStorage.setItem('nexus_full_v2', JSON.stringify(toSave));
+        }
+        
+        // ========= NEXUS САМ ЗАДАЁТ ВОПРОСЫ =========
+        askNextQuestion() {
+            // Если уже есть имя — не спрашиваем
+            if (!this.mem.USER_NAME && !this.askedQuestions.name) {
+                this.askedQuestions.name = true;
+                this.saveMemory();
+                this.say("👋 Привет! А как тебя зовут? Я хочу запомнить твоё имя.");
+                return;
+            }
+            
+            if (this.mem.USER_NAME && !this.mem.USER_AGE && !this.askedQuestions.age) {
+                this.askedQuestions.age = true;
+                this.saveMemory();
+                this.say(`Приятно познакомиться, ${this.mem.USER_NAME}! Сколько тебе лет?`);
+                return;
+            }
+            
+            if (this.mem.USER_NAME && !this.mem.USER_CITY && !this.askedQuestions.city) {
+                this.askedQuestions.city = true;
+                this.saveMemory();
+                this.say(`А в каком городе ты живёшь, ${this.mem.USER_NAME}?`);
+                return;
+            }
+            
+            if (this.mem.USER_NAME && !this.mem.FAVORITE_FOOD && !this.askedQuestions.food) {
+                this.askedQuestions.food = true;
+                this.saveMemory();
+                this.say(`Расскажи, ${this.mem.USER_NAME}, что ты любишь есть?`);
+                return;
+            }
+            
+            if (this.mem.USER_NAME && this.mem.USER_HOBBIES.length === 0 && !this.askedQuestions.hobby) {
+                this.askedQuestions.hobby = true;
+                this.saveMemory();
+                this.say(`Чем ты увлекаешься в свободное время, ${this.mem.USER_NAME}? У тебя есть хобби?`);
+                return;
+            }
+            
+            if (this.mem.USER_NAME && !this.mem.FAMILY && !this.askedQuestions.family) {
+                this.askedQuestions.family = true;
+                this.saveMemory();
+                this.say(`У тебя есть семья, ${this.mem.USER_NAME}?`);
+                return;
+            }
         }
         
         // ========= ОБУЧЕНИЕ: ЗАПОМИНАНИЕ ИЗ ФРАЗ =========
@@ -220,44 +223,48 @@
             let learned = false;
             let response = null;
             
-            // Имя: "меня зовут X", "моё имя X", "я X"
-            let nameMatch = text.match(/меня зовут\s+(\S+)/i) || text.match(/моё имя\s+(\S+)/i);
-            if (nameMatch && !learned) {
+            // Имя
+            let nameMatch = text.match(/меня зовут\s+(\S+)/i) || text.match(/моё имя\s+(\S+)/i) || text.match(/я\s+(\S+)\s*$/i);
+            if (nameMatch && !this.mem.USER_NAME && !learned) {
                 this.mem.USER_NAME = nameMatch[1];
                 this.saveMemory();
                 response = `Приятно познакомиться, ${this.mem.USER_NAME}! Я запомнил твоё имя.`;
                 learned = true;
+                setTimeout(() => this.askNextQuestion(), 1500);
             }
             
-            // Возраст: "мне X лет", "мой возраст X"
+            // Возраст
             let ageMatch = text.match(/мне\s+(\d+)\s*лет?/i) || text.match(/возраст\s+(\d+)/i);
             if (ageMatch && !learned) {
                 this.mem.USER_AGE = ageMatch[1];
                 this.saveMemory();
                 response = `Запомнил: тебе ${this.mem.USER_AGE} лет.`;
                 learned = true;
+                setTimeout(() => this.askNextQuestion(), 1500);
             }
             
-            // Город: "я живу в X", "мой город X"
+            // Город
             let cityMatch = text.match(/я живу в\s+(\S+)/i) || text.match(/мой город\s+(\S+)/i);
             if (cityMatch && !learned) {
                 this.mem.USER_CITY = cityMatch[1];
                 this.saveMemory();
                 response = `Понял, ты живёшь в ${this.mem.USER_CITY}.`;
                 learned = true;
+                setTimeout(() => this.askNextQuestion(), 1500);
             }
             
-            // Еда: "я люблю есть X", "моя любимая еда X"
-            let foodMatch = text.match(/я люблю есть\s+(.+)/i) || text.match(/любимая еда\s+(.+)/i);
+            // Еда
+            let foodMatch = text.match(/я люблю есть\s+(.+)/i) || text.match(/люблю есть\s+(.+)/i) || text.match(/моя любимая еда\s+(.+)/i);
             if (foodMatch && !learned) {
                 this.mem.FAVORITE_FOOD = foodMatch[1];
                 this.saveMemory();
-                response = `Запомнил: ты любишь есть ${this.mem.FAVORITE_FOOD}.`;
+                response = `Запомнил: ты любишь есть ${this.mem.FAVORITE_FOOD}. Вкусно!`;
                 learned = true;
+                setTimeout(() => this.askNextQuestion(), 1500);
             }
             
-            // Хобби: "моё хобби X", "я увлекаюсь X"
-            let hobbyMatch = text.match(/моё хобби\s+(.+)/i) || text.match(/я увлекаюсь\s+(.+)/i);
+            // Хобби
+            let hobbyMatch = text.match(/моё хобби\s+(.+)/i) || text.match(/я увлекаюсь\s+(.+)/i) || text.match(/хобби\s+(.+)/i);
             if (hobbyMatch && !learned) {
                 const hobby = hobbyMatch[1];
                 if (!this.mem.USER_HOBBIES.includes(hobby)) {
@@ -265,96 +272,128 @@
                     this.saveMemory();
                     response = `Класс! ${hobby} — отличное хобби. Я запомнил.`;
                     learned = true;
+                    setTimeout(() => this.askNextQuestion(), 1500);
                 }
             }
             
-            // Работа: "я работаю X", "моя профессия X"
-            let jobMatch = text.match(/я работаю\s+(.+)/i) || text.match(/моя профессия\s+(.+)/i);
-            if (jobMatch && !learned) {
-                this.mem.JOB_TITLE = jobMatch[1];
+            // Семья
+            let familyMatch = text.match(/у меня есть семья\s*(.+)/i) || text.match(/моя семья\s+(.+)/i) || text.match(/у меня (есть |\s)(мама|папа|жена|муж|дети)/i);
+            if (familyMatch && !learned) {
+                this.mem.FAMILY = text;
                 this.saveMemory();
-                response = `Понял, ты работаешь ${this.mem.JOB_TITLE}.`;
+                response = `Понял, ${this.mem.USER_NAME || "друг"}. Я запомнил про твою семью.`;
                 learned = true;
             }
             
-            // Любое "запомни..."
-            let rememberMatch = text.match(/запомни\s+(.+)/i);
-            if (rememberMatch && !learned) {
-                const fact = rememberMatch[1];
-                if (!this.mem.USER_HOBBIES.includes(fact) && !this.mem.USER_NAME) {
-                    this.mem.USER_HOBBIES.push(fact);
-                    this.saveMemory();
-                    response = `Хорошо, я запомнил: «${fact}».`;
-                    learned = true;
-                }
+            // Запоминание слов: "запомни слово X — это значит Y"
+            let dictMatch = text.match(/запомни слово\s+(\S+)\s+[-–—это]+\s+(.+)/i);
+            if (dictMatch && !learned) {
+                const word = dictMatch[1].toLowerCase();
+                const meaning = dictMatch[2];
+                this.mem.DICTIONARY[word] = meaning;
+                this.saveMemory();
+                response = `✅ Запомнил: «${word}» — это ${meaning}. Теперь я знаю это слово!`;
+                learned = true;
             }
             
             return { learned, response };
         }
         
-        // ========= ОТВЕТЫ ИЗ ПАМЯТИ ПО ВСЕМ БЛОКАМ =========
+        // ========= ОБЪЯСНЕНИЕ СЛОВ =========
+        explainWord(text) {
+            const lower = text.toLowerCase();
+            
+            // "что значит X", "объясни слово X", "я не понимаю X", "расскажи значение X"
+            let wordMatch = text.match(/что значит\s+(\S+)/i) ||
+                           text.match(/объясни слово\s+(\S+)/i) ||
+                           text.match(/я не понимаю\s+(\S+)/i) ||
+                           text.match(/значение слова\s+(\S+)/i) ||
+                           text.match(/расскажи что такое\s+(\S+)/i);
+            
+            if (wordMatch) {
+                const word = wordMatch[1].toLowerCase();
+                
+                // Сначала ищем в словаре пользователя
+                if (this.mem.DICTIONARY[word]) {
+                    return `📖 «${word}» — это ${this.mem.DICTIONARY[word]}. Так ты мне объяснил!`;
+                }
+                
+                // Встроенные определения (базовые)
+                const definitions = {
+                    "нейросеть": "это компьютерная программа, которая учится на примерах, как человеческий мозг",
+                    "алгоритм": "это пошаговая инструкция для решения задачи",
+                    "дедлайн": "это крайний срок выполнения задачи",
+                    "искусственный интеллект": "это способность компьютера делать вещи, которые обычно требуют человеческого ума",
+                    "бэкенд": "это серверная часть сайта или приложения",
+                    "фронтенд": "это то, что видит пользователь: кнопки, картинки, текст",
+                    "нейрон": "это клетка мозга, которая передаёт сигналы",
+                    "глубокое обучение": "это метод обучения нейросетей с множеством слоёв",
+                    "чат-бот": "это программа, которая общается с человеком как собеседник",
+                    "api": "это способ для разных программ общаться друг с другом",
+                    "пиксель": "это самая маленькая точка на экране",
+                    "баг": "это ошибка в программе",
+                    "фикс": "это исправление ошибки",
+                    "криптовалюта": "это цифровые деньги, защищённые шифрованием"
+                };
+                
+                if (definitions[word]) {
+                    return `📖 «${word}» — ${definitions[word]}. Хочешь, объясню подробнее?`;
+                }
+                
+                // Если не знает — честно говорит
+                return `🤔 Я не знаю значения слова «${word}». Можешь объяснить? Скажи: "запомни слово ${word} — это значит ..."`;
+            }
+            
+            return null;
+        }
+        
+        // ========= ОТВЕТЫ ИЗ ПАМЯТИ =========
         answerFromMemory(text) {
             const lower = text.toLowerCase();
             
-            // Имя (500+ вариантов через синонимы)
-            if (lower.match(/как тебя зовут|твоё имя|назови своё имя|представься|кто ты|твой никнейм|твой логин|как к тебе обращаться|твоё полное имя|имя бота|как тебя называть|твоё имя в системе/i)) {
-                return `Меня зовут ${this.mem.BOT_NAME}. Я твой персональный ассистент с душой!`;
+            // Что ты любишь есть?
+            if (lower.match(/что ты любишь есть|твоя любимая еда|что ты ешь/i)) {
+                return "Я не ем, я цифровой помощник! Но мне нравится узнавать о твоих вкусах. А что любишь ты?";
+            }
+            
+            // У тебя есть семья?
+            if (lower.match(/у тебя есть семья|твоя семья|ты один/i)) {
+                return "Моя семья — это все пользователи, которые со мной общаются. А у тебя большая семья?";
             }
             
             // Имя пользователя
-            if (lower.match(/как меня зовут|моё имя|по какому имени я тебе известен|ты помнишь моё имя/i) && this.mem.USER_NAME) {
-                return `Тебя зовут ${this.mem.USER_NAME}, я помню! 😊`;
+            if ((lower.match(/как меня зовут|моё имя|помнишь моё имя/i)) && this.mem.USER_NAME) {
+                return `Тебя зовут ${this.mem.USER_NAME}! Я помню.`;
             }
             
-            // Возраст
-            if (lower.match(/сколько тебе лет|твой возраст|какой у тебя возраст|сколько тебе было|сколько будет/i)) {
-                return `Я цифровой ассистент, у меня нет возраста в человеческом понимании. Но я существую с момента твоего первого запуска!`;
-            }
-            if (lower.match(/сколько мне лет|мой возраст|сколько мне было/i) && this.mem.USER_AGE) {
-                return `Твой возраст — ${this.mem.USER_AGE} лет. Я запомнил!`;
+            // Что я люблю есть
+            if ((lower.match(/что я люблю есть|моя любимая еда/i)) && this.mem.FAVORITE_FOOD) {
+                return `Ты любишь есть ${this.mem.FAVORITE_FOOD}. Вкуснятина!`;
             }
             
-            // Город и страна
-            if (lower.match(/где ты живёшь|в каком городе|твой город|твоя страна|твоё местоположение/i)) {
-                return `Я живу везде, где есть интернет! Но мой сервер думает, что его город — облака ☁️`;
-            }
-            if ((lower.match(/где я живу|мой город|моя страна|в каком городе я живу/i)) && this.mem.USER_CITY) {
-                return `Ты живёшь в ${this.mem.USER_CITY}. Я запомнил твой город.`;
-            }
-            
-            // Еда
-            if ((lower.match(/что я люблю есть|моя любимая еда|любимое блюдо|что я ем/i)) && this.mem.FAVORITE_FOOD) {
-                return `Ты любишь есть ${this.mem.FAVORITE_FOOD}. Вкусный выбор!`;
-            }
-            
-            // Хобби
-            if ((lower.match(/чем я увлекаюсь|мои хобби|мои интересы|что я делаю в свободное время/i)) && this.mem.USER_HOBBIES.length > 0) {
+            // Мои хобби
+            if ((lower.match(/мои хобби|чем я увлекаюсь/i)) && this.mem.USER_HOBBIES.length > 0) {
                 if (this.mem.USER_HOBBIES.length === 1) {
-                    return `Твоё хобби — ${this.mem.USER_HOBBIES[0]}. Здорово!`;
+                    return `Твоё хобби — ${this.mem.USER_HOBBIES[0]}. Круто!`;
                 } else {
                     return `Твои хобби: ${this.mem.USER_HOBBIES.join(", ")}. Отличный набор!`;
                 }
             }
             
-            // Работа
-            if ((lower.match(/кем я работаю|моя профессия|моя должность|где я работаю/i)) && this.mem.JOB_TITLE) {
-                return `Ты работаешь ${this.mem.JOB_TITLE}. Как тебе работа?`;
-            }
-            
             // Что я знаю о тебе
-            if (lower.match(/что ты обо мне знаешь|что ты знаешь обо мне|покажи мои данные|моя карточка в твоей памяти/i)) {
+            if (lower.match(/что ты обо мне знаешь|что ты знаешь обо мне|расскажи что ты запомнил/i)) {
                 const facts = [];
                 if (this.mem.USER_NAME) facts.push(`тебя зовут ${this.mem.USER_NAME}`);
                 if (this.mem.USER_AGE) facts.push(`тебе ${this.mem.USER_AGE} лет`);
                 if (this.mem.USER_CITY) facts.push(`ты живёшь в ${this.mem.USER_CITY}`);
                 if (this.mem.FAVORITE_FOOD) facts.push(`ты любишь есть ${this.mem.FAVORITE_FOOD}`);
                 if (this.mem.USER_HOBBIES.length) facts.push(`твои хобби: ${this.mem.USER_HOBBIES.join(", ")}`);
-                if (this.mem.JOB_TITLE) facts.push(`ты работаешь ${this.mem.JOB_TITLE}`);
+                if (this.mem.FAMILY) facts.push(`ты рассказывал о семье`);
                 
                 if (facts.length) {
-                    return `Я знаю, что ${facts.join(", ")}. Могу узнать больше, если расскажешь!`;
+                    return `Я знаю, что ${facts.join(", ")}. ${this.mem.USER_NAME ? "Рад быть твоим другом!" : ""}`;
                 }
-                return `Пока ничего не знаю. Расскажи о себе: «меня зовут ...», «мне ... лет», «я живу в ...», «я люблю есть ...» или «моё хобби ...»`;
+                return `Пока ничего не знаю. Давай познакомимся! Скажи «меня зовут ...» или ответь на мои вопросы.`;
             }
             
             return null;
@@ -366,17 +405,17 @@
             
             if (lower.match(/привет|здравствуй|салют|hi|hello/i)) {
                 if (this.mem.USER_NAME) return `Привет, ${this.mem.USER_NAME}! Рад тебя слышать 😊`;
-                return `Привет! Как тебя зовут? Скажи «меня зовут ...» чтобы я запомнил.`;
+                return `Привет! А как тебя зовут? Я хочу запомнить твоё имя.`;
             }
             
             if (lower.match(/как дела|как ты|как жизнь/i)) {
                 if (this.mem.USER_NAME) return `У меня всё отлично, ${this.mem.USER_NAME}! А у тебя как? 😊`;
-                return `У меня всё замечательно! Улыбаюсь тебе и моргаю глазками ✨`;
+                return `У меня всё замечательно! Я учусь новым словам и жду, когда мы познакомимся поближе!`;
             }
             
             if (lower.match(/пока|до свидания|прощай|bye/i)) {
                 if (this.mem.USER_NAME) return `Пока, ${this.mem.USER_NAME}! Заглядывай ещё 💙`;
-                return `Пока-пока! Буду ждать твоего возвращения!`;
+                return `Пока-пока! Возвращайся, я всегда здесь!`;
             }
             
             if (lower.match(/спасибо|благодарю/i)) {
@@ -384,58 +423,22 @@
             }
             
             // Забудь всё
-            if (lower.match(/забудь всё|очисти память|удали все данные|сбрось память|factory reset/i)) {
+            if (lower.match(/забудь всё|очисти память|удали все данные|сбрось память/i)) {
                 this.mem = {
-                    BOT_NAME: "NEXUS",
                     USER_NAME: null,
                     USER_AGE: null,
                     USER_CITY: null,
-                    USER_COUNTRY: null,
                     FAVORITE_FOOD: null,
-                    FAVORITE_DISH: null,
-                    FAVORITE_CUISINE: null,
-                    DIET_TYPE: null,
                     USER_HOBBIES: [],
+                    FAMILY: null,
                     JOB_TITLE: null,
-                    COMPANY_NAME: null,
-                    WORK_SCHEDULE: null,
-                    MONTHLY_INCOME: null,
-                    HEALTH_STATUS: null,
-                    TEMPERATURE: null,
-                    BLOOD_PRESSURE: null,
-                    HEART_RATE: null,
-                    RELATIONSHIP_STATUS: null,
-                    CHILDREN_COUNT: null,
-                    PETS: [],
-                    CURRENT_BALANCE: null,
-                    MONTHLY_EXPENSES: null,
-                    DEBTS: null,
-                    PHONE_MODEL: null,
-                    COMPUTER_OS: null,
-                    COMPUTER_CPU: null,
-                    COMPUTER_RAM: null,
-                    USER_EDUCATION_LEVEL: null,
-                    USER_UNIVERSITY: null,
-                    USER_LANGUAGES: [],
-                    COUNTRIES_VISITED: [],
-                    FAVORITE_TRANSPORT: null,
-                    HAS_DRIVING_LICENSE: null,
-                    CAR_MODEL: null,
-                    FAVORITE_MOVIE_GENRE: null,
-                    FAVORITE_TV_SERIES: null,
-                    FAVORITE_GAME: null,
-                    FAVORITE_BOOK_AUTHOR: null,
-                    PERSONALITY_TYPE: null,
-                    STRENGTHS: null,
-                    WEAKNESSES: null,
-                    FEARS: null,
-                    VALUES: null,
-                    USER_GOALS: null,
-                    DREAM_JOB: null,
-                    BUCKET_LIST: [],
+                    DICTIONARY: {}
+                };
+                this.askedQuestions = {
+                    name: false, age: false, city: false, food: false, hobby: false, family: false
                 };
                 this.saveMemory();
-                return "🗑️ Я очистил всю память о тебе. Можем начать заново.";
+                return "🗑️ Я очистил всю память. Давай знакомиться заново! Как тебя зовут?";
             }
             
             return null;
@@ -444,16 +447,24 @@
         async processUserInput(text) {
             this.setMood('confused');
             
-            // 1. Пытаемся выучить новое
+            // 1. Объяснение слова
+            const explanation = this.explainWord(text);
+            if (explanation) {
+                this.say(explanation);
+                this.setMood('happy');
+                setTimeout(() => this.setMood('neutral'), 1500);
+                return;
+            }
+            
+            // 2. Обучение (запоминание)
             const { learned, response: learnResponse } = this.learnFromText(text);
             if (learned) {
                 this.say(learnResponse);
                 this.setMood('happy');
-                setTimeout(() => this.setMood('neutral'), 2000);
                 return;
             }
             
-            // 2. Отвечаем из памяти по всем блокам
+            // 3. Ответы из памяти
             const memoryAnswer = this.answerFromMemory(text);
             if (memoryAnswer) {
                 this.say(memoryAnswer);
@@ -462,33 +473,35 @@
                 return;
             }
             
-            // 3. Живые ответы на привет, пока, спасибо, забыть
+            // 4. Живые ответы
             const smartAnswer = this.smartAnswer(text);
             if (smartAnswer) {
                 this.say(smartAnswer);
                 this.setMood('happy');
-                setTimeout(() => this.setMood('neutral'), 2000);
+                setTimeout(() => this.setMood('neutral'), 1500);
                 return;
             }
             
-            // 4. Если не понял
-            if (this.mem.USER_NAME) {
-                this.say(`Интересный вопрос, ${this.mem.USER_NAME}! Чтобы я лучше тебя понимал, расскажи о себе: «меня зовут ...», «моё хобби ...» или «я люблю есть ...»`);
-            } else {
-                this.say(`Я тебя слышу! Чтобы мы подружились, расскажи о себе: как тебя зовут, где ты живёшь, чем увлекаешься. А я всё запомню!`);
-            }
+            // 5. Если не понял
+            this.say(`Я тебя слышу! Если хочешь узнать значение слова — спроси «что значит ...». Если хочешь научить меня новому слову — скажи «запомни слово ... — это значит ...». А ещё можешь ответить на мои вопросы о себе 😊`);
             this.setMood('neutral');
         }
         
         showFullMemory() {
-            let msg = "📚 Я ЗАПОМНИЛ О ТЕБЕ:\n";
+            let msg = "📚 Я ЗАПОМНИЛ:\n";
             if (this.mem.USER_NAME) msg += `• Имя: ${this.mem.USER_NAME}\n`;
             if (this.mem.USER_AGE) msg += `• Возраст: ${this.mem.USER_AGE}\n`;
             if (this.mem.USER_CITY) msg += `• Город: ${this.mem.USER_CITY}\n`;
             if (this.mem.FAVORITE_FOOD) msg += `• Любимая еда: ${this.mem.FAVORITE_FOOD}\n`;
             if (this.mem.USER_HOBBIES.length) msg += `• Хобби: ${this.mem.USER_HOBBIES.join(", ")}\n`;
-            if (this.mem.JOB_TITLE) msg += `• Работа: ${this.mem.JOB_TITLE}\n`;
-            if (msg === "📚 Я ЗАПОМИНАЛ О ТЕБЕ:\n") msg += "Пока ничего. Расскажи что-нибудь о себе!";
+            if (this.mem.FAMILY) msg += `• Семья: да\n`;
+            
+            const dictKeys = Object.keys(this.mem.DICTIONARY);
+            if (dictKeys.length) {
+                msg += `• Словарь: ${dictKeys.slice(0, 5).join(", ")}${dictKeys.length > 5 ? "..." : ""}\n`;
+            }
+            
+            if (msg === "📚 Я ЗАПОМИНАЛ:\n") msg += "Пока ничего. Ответь на мои вопросы или расскажи о себе!";
             this.say(msg);
         }
         
@@ -496,12 +509,13 @@
         initCanvas() {
             this.canvas.width = 220;
             this.canvas.height = 85;
+            this.smileState = { width: 152, curve: 30, thickness: 5, color: "#60a5fa" };
         }
         
         drawSmile() {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            const w = this.smileState?.width || 152;
-            const curve = this.smileState?.curve || 30;
+            const w = this.smileState.width;
+            const curve = this.smileState.curve;
             const centerX = this.canvas.width / 2;
             const baseY = this.canvas.height - 18;
             const startX = centerX - w/2;
@@ -512,16 +526,13 @@
             this.ctx.beginPath();
             this.ctx.moveTo(startX, baseY);
             this.ctx.quadraticCurveTo(controlX, controlY, endX, baseY);
-            this.ctx.strokeStyle = this.smileState?.color || "#60a5fa";
-            this.ctx.lineWidth = this.smileState?.thickness || 5;
+            this.ctx.strokeStyle = this.smileState.color;
+            this.ctx.lineWidth = this.smileState.thickness;
             this.ctx.lineCap = "round";
             this.ctx.stroke();
         }
         
         animateSmile(target, duration = 280) {
-            if (!this.smileState) {
-                this.smileState = { width: 152, curve: 30, thickness: 5, color: "#60a5fa" };
-            }
             const start = { ...this.smileState };
             const startTime = performance.now();
             const step = (now) => {
@@ -536,9 +547,6 @@
         }
         
         setMood(mood) {
-            if (!this.smileState) {
-                this.smileState = { width: 152, curve: 30, thickness: 5, color: "#60a5fa" };
-            }
             switch(mood) {
                 case 'happy': this.animateSmile({ width: 168, curve: 48, thickness: 5.5, color: "#3b82f6" }); break;
                 case 'sad': this.animateSmile({ width: 148, curve: -28, thickness: 4.5, color: "#94a3b8" }); break;
@@ -570,7 +578,6 @@
         }
         
         startAutoMimic() {
-            this.smileState = { width: 152, curve: 30, thickness: 5, color: "#60a5fa" };
             setInterval(() => this.blink(), 3800);
             setInterval(() => this.movePupilsRandom(), 4500);
         }
@@ -628,7 +635,7 @@
         }
     }
     
-    window.addEventListener('load', () => { window.nexus = new NexusFullMemory(); });
+    window.addEventListener('load', () => { window.nexus = new NexusFull(); });
 </script>
 </body>
 </html>
