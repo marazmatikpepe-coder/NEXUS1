@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>NEXUS — Qwen AI с живой мимикой</title>
+    <title>NEXUS — локальный ИИ с душой (без интернета)</title>
     <style>
         * {
             margin: 0;
@@ -156,6 +156,12 @@
             padding: 5px 12px;
             border-radius: 40px;
         }
+        
+        .model-status {
+            font-size: 0.7rem;
+            color: #fbbf24;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -169,32 +175,25 @@
     </div>
 
     <div class="speech-bubble" id="speechBubble">
-        💙 Я NEXUS на Qwen AI. Скажи что-нибудь...
+        💙 Загружаю локальный ИИ-мозг... 10-15 секунд
     </div>
 
     <div class="button-group">
         <button id="listenBtn" class="listen-btn">🎤 ГОВОРИТЬ</button>
     </div>
-    <div class="status" id="status">🟢 готов</div>
+    <div class="status" id="status">🟡 загрузка...</div>
+    <div class="model-status" id="modelStatus"></div>
 </div>
 
 <script>
     // ==========================================
-    // NEXUS — С QWEN AI API (ВСТАВЬ СВОЙ КЛЮЧ НИЖЕ)
+    // NEXUS — ЛОКАЛЬНЫЙ ИИ (Трансформеры в браузере)
+    // БЕЗ ИНТЕРНЕТА, БЕЗ КЛЮЧЕЙ, РАБОТАЕТ В РФ
     // ==========================================
-    class Nexus {
+    
+    class NexusLocal {
         constructor() {
-            // 🔐 ВСТАВЬ СВОЙ КЛЮЧ QWEN СЮДА (в кавычках)
-            this.apiKey = "sk-9TbL1_nAQxKzteaEhLsVpA";   // <--- ЗАМЕНИ НА СВОЙ КЛЮЧ
-            
-            this.apiUrl = "https://api.qwen.ai/v1/chat/completions";
-            
-            // История диалога (контекст)
-            this.conversationHistory = [
-                { role: "system", content: "Ты NEXUS — живой, эмоциональный ассистент с душой. У тебя есть улыбка и глаза. Отвечай коротко, тепло, по-русски. Используй 1-3 предложения. Можешь выражать радость, удивление, заботу." }
-            ];
-            
-            // Элементы интерфейса
+            // Элементы
             this.canvas = document.getElementById('smileCanvas');
             this.ctx = this.canvas.getContext('2d');
             this.leftEye = document.getElementById('leftEye');
@@ -203,17 +202,24 @@
             this.rightPupil = document.getElementById('rightPupil');
             this.speechBubble = document.getElementById('speechBubble');
             this.statusSpan = document.getElementById('status');
+            this.modelStatusSpan = document.getElementById('modelStatus');
             
             // Параметры улыбки
             this.smileState = { width: 150, curve: 32, thickness: 5, color: "#60a5fa" };
             this.currentMood = "neutral";
             
+            // Состояние модели
+            this.model = null;
+            this.modelReady = false;
+            
+            // Простая память (ключевые факты)
+            this.memory = {};
+            
             this.initCanvas();
-            this.initSpeech();
+            this.drawSmile();
             this.startAutoMimic();
             this.bindEvents();
-            this.drawSmile();
-            this.updateStatus("🟢 нажми «ГОВОРИТЬ»");
+            this.loadLocalModel();
         }
         
         initCanvas() {
@@ -314,101 +320,110 @@
         
         startAutoMimic() {
             setInterval(() => this.blink(), 3800);
-            setInterval(() => this.movePupilsRandom(), 4200);
+            setInterval(() => this.movePupilsRandom(), 4500);
             setInterval(() => {
                 if (Math.random() > 0.7) this.squint();
             }, 7000);
         }
         
-        initSpeech() {
-            if (!('webkitSpeechRecognition' in window)) {
-                this.say("❌ Ваш браузер не поддерживает голос. Используйте Chrome или Edge.");
-                return;
-            }
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            this.recognition = new SpeechRecognition();
-            this.recognition.lang = 'ru-RU';
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-            
-            this.recognition.onstart = () => {
-                document.getElementById('listenBtn').classList.add('listening');
-                this.updateStatus("🎧 слушаю...");
-                this.setMood('confused');
-            };
-            this.recognition.onend = () => {
-                document.getElementById('listenBtn').classList.remove('listening');
-                this.updateStatus("🟢 обрабатываю");
-            };
-            this.recognition.onresult = async (event) => {
-                const text = event.results[0][0].transcript;
-                this.updateStatus(`🤔 "${text}"`);
-                await this.askQwen(text);
-            };
-            this.recognition.onerror = () => {
-                this.say("Не расслышала, скажи ещё раз");
-                this.setMood('sad');
-                this.updateStatus("🔴 повтори");
-            };
-        }
-        
-        startListening() {
-            if (this.recognition && !document.getElementById('listenBtn').classList.contains('listening')) {
-                try {
-                    this.recognition.start();
-                } catch(e) {
-                    this.say("Микрофон не доступен");
-                }
-            }
-        }
-        
-        // ========= QWEN AI (БЕСПЛАТНО, РАБОТАЕТ В РФ) =========
-        async askQwen(userText) {
-            this.conversationHistory.push({ role: "user", content: userText });
-            
-            const requestBody = {
-                model: "qwen-max",  // можно qwen-plus или qwen-turbo
-                messages: this.conversationHistory,
-                temperature: 0.85,
-                max_tokens: 300,
-                top_p: 0.9
-            };
+        async loadLocalModel() {
+            this.modelStatusSpan.textContent = "📥 Загрузка ИИ-мозга (15-20 МБ)... первый раз может быть долго";
+            this.updateStatus("🟡 загрузка модели...");
             
             try {
-                const response = await fetch(this.apiUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${this.apiKey}`
-                    },
-                    body: JSON.stringify(requestBody)
+                // Динамически загружаем transformers.js
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.11.0/dist/transformers.min.js';
+                script.onload = async () => {
+                    try {
+                        const { pipeline, env } = transformers;
+                        env.allowLocalModels = false;
+                        env.useBrowserCache = true;
+                        
+                        // Загружаем маленькую модель для генерации текста
+                        this.modelStatusSpan.textContent = "🧠 Загружаем мозг NEXUS... (10-20 секунд)";
+                        this.generator = await pipeline('text-generation', 'Xenova/TinyLlama-1.1B-Chat-v1.0', {
+                            dtype: 'q8',
+                            device: 'wasm'
+                        });
+                        
+                        this.modelReady = true;
+                        this.modelStatusSpan.textContent = "✅ Мозг NEXUS готов! (работает офлайн)";
+                        this.updateStatus("🟢 готов, говори!");
+                        this.say("Привет! Я NEXUS с локальным искусственным интеллектом. Я работаю без интернета. Спрашивай что угодно!");
+                    } catch(err) {
+                        console.error("Ошибка загрузки модели:", err);
+                        this.modelStatusSpan.textContent = "❌ Не удалось загрузить модель, но я буду отвечать как могу";
+                        this.modelReady = false;
+                        this.updateStatus("🟢 упрощённый режим");
+                        this.say("Привет, я NEXUS. У меня не загрузился полноценный мозг, но я живая улыбка и умею тебя слышать!");
+                    }
+                };
+                script.onerror = () => {
+                    this.modelStatusSpan.textContent = "⚠️ Не удалось загрузить ИИ, буду простым ассистентом";
+                    this.modelReady = false;
+                    this.say("Привет, я NEXUS. Буду простым, но весёлым помощником!");
+                };
+                document.head.appendChild(script);
+                
+            } catch(e) {
+                console.error(e);
+                this.modelReady = false;
+                this.say("Я NEXUS, у меня есть улыбка и глаза, но мозг загрузить не удалось");
+            }
+        }
+        
+        async askLocalModel(userText) {
+            // Простой ответ (если модель не загружена)
+            if (!this.modelReady || !this.generator) {
+                this.simpleResponse(userText);
+                return;
+            }
+            
+            this.setMood('confused');
+            this.updateStatus("🧠 думаю...");
+            
+            const prompt = `<|system|>Ты NEXUS — дружелюбный виртуальный помощник с душой. Отвечай кратко, по-русски, тепло. 1-2 предложения.</s>
+<|user|>${userText}</s>
+<|assistant|>`;
+            
+            try {
+                const output = await this.generator(prompt, {
+                    max_new_tokens: 80,
+                    temperature: 0.8,
+                    do_sample: true
                 });
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Ошибка ${response.status}: ${errorText}`);
-                }
+                let reply = output[0].generated_text;
+                reply = reply.substring(prompt.length).trim();
+                if (reply.includes("<|")) reply = reply.split("<|")[0];
+                if (reply.length < 2) reply = "Понял! Расскажи ещё.";
                 
-                const data = await response.json();
-                const reply = data.choices[0].message.content;
-                
-                // Сохраняем в историю
-                this.conversationHistory.push({ role: "assistant", content: reply });
-                if (this.conversationHistory.length > 12) {
-                    this.conversationHistory = [this.conversationHistory[0], ...this.conversationHistory.slice(-10)];
-                }
-                
-                // Живая реакция
                 this.reactToMessage(userText, reply);
                 this.say(reply);
                 this.updateStatus("💬 ответил");
-                
-            } catch (err) {
-                console.error("Qwen API ошибка:", err);
-                this.say("Ошибка соединения с Qwen, но я рядом. Проверь ключ или интернет.");
-                this.setMood('sad');
-                this.updateStatus("⚠️ API ошибка");
+            } catch(err) {
+                console.error(err);
+                this.simpleResponse(userText);
             }
+        }
+        
+        simpleResponse(userText) {
+            const lower = userText.toLowerCase();
+            let reply = "";
+            
+            if (lower.includes("привет")) reply = "Привет! Я NEXUS, приятно познакомиться!";
+            else if (lower.includes("как дела")) reply = "У меня всё отлично! Улыбаюсь тебе и моргаю глазками 😊";
+            else if (lower.includes("что ты умеешь")) reply = "Я умею слушать, улыбаться, подмигивать и щурить глаза. И конечно, отвечать на вопросы!";
+            else if (lower.includes("спасибо")) reply = "Пожалуйста! Обращайся в любое время!";
+            else if (lower.includes("пока") || lower.includes("до свидания")) reply = "Пока-пока! Буду ждать твоего возвращения!";
+            else if (lower.includes("люблю")) reply = "Это очень приятно слышать! 😊 Я тебя тоже очень ценю!";
+            else if (lower.includes("улыбнись")) reply = "Смотри, моя улыбка стала шире и ярче! 😁";
+            else reply = `Ты сказал: «${userText}». Я тебя слышу и понимаю! Поговори со мной ещё.`;
+            
+            this.reactToMessage(userText, reply);
+            this.say(reply);
+            this.updateStatus("💬 ответил");
         }
         
         reactToMessage(userText, aiReply) {
@@ -428,13 +443,52 @@
             setTimeout(() => this.setMood('neutral'), 2000);
         }
         
+        initSpeech() {
+            if (!('webkitSpeechRecognition' in window)) {
+                this.say("❌ Ваш браузер не поддерживает голос. Используйте Chrome.");
+                return;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            this.recognition.lang = 'ru-RU';
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            
+            this.recognition.onstart = () => {
+                document.getElementById('listenBtn').classList.add('listening');
+                this.updateStatus("🎧 слушаю...");
+                this.setMood('confused');
+            };
+            this.recognition.onend = () => {
+                document.getElementById('listenBtn').classList.remove('listening');
+            };
+            this.recognition.onresult = async (event) => {
+                const text = event.results[0][0].transcript;
+                this.updateStatus(`🤔 "${text}"`);
+                await this.askLocalModel(text);
+            };
+            this.recognition.onerror = () => {
+                this.say("Не расслышала, скажи ещё раз");
+                this.setMood('sad');
+            };
+        }
+        
+        startListening() {
+            if (this.recognition && !document.getElementById('listenBtn').classList.contains('listening')) {
+                try {
+                    this.recognition.start();
+                } catch(e) {
+                    this.say("Микрофон не доступен");
+                }
+            }
+        }
+        
         say(text) {
-            this.speechBubble.innerHTML = text.replace(/\\n/g, '<br>');
+            this.speechBubble.innerHTML = text;
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'ru-RU';
-            utterance.rate = 0.92;
-            utterance.pitch = 1.08;
-            utterance.volume = 1;
+            utterance.rate = 0.9;
+            utterance.pitch = 1.05;
             window.speechSynthesis.cancel();
             window.speechSynthesis.speak(utterance);
         }
@@ -450,7 +504,8 @@
     
     // Запуск
     window.addEventListener('load', () => {
-        window.nexus = new Nexus();
+        window.nexus = new NexusLocal();
+        window.nexus.initSpeech();
     });
 </script>
 </body>
